@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { contestants } from '../data/contestants';
+import { supabase } from '../lib/supabase';
+import { useAuth } from './AuthContext';
 
 const SoleSurvivorContext = createContext();
 
@@ -12,10 +13,12 @@ export const useSoleSurvivor = () => {
 };
 
 export const SoleSurvivorProvider = ({ children }) => {
+  const { user } = useAuth();
   const [soleSurvivorPick, setSoleSurvivorPick] = useState(null);
   const [isSoleSurvivorSubmitted, setIsSoleSurvivorSubmitted] = useState(false);
   const [soleSurvivorDeadline, setSoleSurvivorDeadline] = useState(new Date('2026-02-15T23:59:59')); // After Episode 2
   const [isSoleSurvivorOpen, setIsSoleSurvivorOpen] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     // Check if sole survivor selection is still open
@@ -24,98 +27,131 @@ export const SoleSurvivorProvider = ({ children }) => {
       setIsSoleSurvivorOpen(false);
     }
 
-    // Load saved sole survivor pick
-    const savedPick = localStorage.getItem('survivor_sole_survivor_pick');
-    const savedSubmitted = localStorage.getItem('survivor_sole_survivor_submitted');
+    if (user) {
+      loadSoleSurvivorData();
+    }
+  }, [user, soleSurvivorDeadline]);
 
-    if (savedPick) {
-      try {
-        const pickData = JSON.parse(savedPick);
-        const contestant = contestants.find(c => c.id === pickData.contestantId);
-        if (contestant) {
-          setSoleSurvivorPick({
-            ...contestant,
-            selectedAt: pickData.selectedAt,
-            episodesHeld: pickData.episodesHeld || 0
-          });
-        }
-      } catch (error) {
-        console.error('Error loading sole survivor pick:', error);
+  const loadSoleSurvivorData = async () => {
+    if (!user) return;
+
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('sole_survivor_picks')
+        .select(`
+          *,
+          contestants (*)
+        `)
+        .eq('user_id', user.id)
+        .eq('season_id', 1)
+        .eq('is_active', true)
+        .order('selected_at', { ascending: false })
+        .limit(1);
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        setSoleSurvivorPick(data[0]);
+        setIsSoleSurvivorSubmitted(true);
       }
+    } catch (error) {
+      console.error('Error loading sole survivor data:', error);
+    } finally {
+      setLoading(false);
     }
+  };
 
-    if (savedSubmitted === 'true') {
+  const selectSoleSurvivor = async (contestantId, isOriginalPick = false) => {
+    if (!user) return;
+
+    try {
+      // Deactivate any existing picks
+      await supabase
+        .from('sole_survivor_picks')
+        .update({ 
+          is_active: false,
+          replaced_at: new Date().toISOString()
+        })
+        .eq('user_id', user.id)
+        .eq('season_id', 1);
+
+      // Create new pick
+      const { data, error } = await supabase
+        .from('sole_survivor_picks')
+        .insert([{
+          user_id: user.id,
+          season_id: 1,
+          contestant_id: contestantId,
+          episodes_held: 0,
+          is_original_pick: isOriginalPick,
+          is_active: true
+        }])
+        .select(`
+          *,
+          contestants (*)
+        `)
+        .single();
+
+      if (error) throw error;
+
+      setSoleSurvivorPick(data);
       setIsSoleSurvivorSubmitted(true);
+
+      return data;
+    } catch (error) {
+      console.error('Error selecting sole survivor:', error);
+      return null;
     }
-  }, [soleSurvivorDeadline]);
-
-  const selectSoleSurvivor = (contestantId) => {
-    const contestant = contestants.find(c => c.id === contestantId);
-    if (!contestant) return;
-
-    const pick = {
-      ...contestant,
-      selectedAt: new Date().toISOString(),
-      episodesHeld: 0
-    };
-
-    setSoleSurvivorPick(pick);
-    setIsSoleSurvivorSubmitted(true);
-
-    // Save to localStorage
-    localStorage.setItem('survivor_sole_survivor_pick', JSON.stringify({
-      contestantId: contestant.id,
-      selectedAt: pick.selectedAt,
-      episodesHeld: pick.episodesHeld
-    }));
-    localStorage.setItem('survivor_sole_survivor_submitted', 'true');
   };
 
-  const changeSoleSurvivor = (contestantId) => {
-    if (!isSoleSurvivorOpen) return;
+  const changeSoleSurvivor = async (contestantId) => {
+    if (!isSoleSurvivorOpen || !user) return;
 
-    const contestant = contestants.find(c => c.id === contestantId);
-    if (!contestant) return;
-
-    const pick = {
-      ...contestant,
-      selectedAt: new Date().toISOString(),
-      episodesHeld: 0
-    };
-
-    setSoleSurvivorPick(pick);
-
-    // Save to localStorage
-    localStorage.setItem('survivor_sole_survivor_pick', JSON.stringify({
-      contestantId: contestant.id,
-      selectedAt: pick.selectedAt,
-      episodesHeld: pick.episodesHeld
-    }));
+    return await selectSoleSurvivor(contestantId, false);
   };
 
-  const updateEpisodesHeld = (episodes) => {
-    if (!soleSurvivorPick) return;
+  const updateEpisodesHeld = async (episodes) => {
+    if (!soleSurvivorPick || !user) return;
 
-    const updatedPick = {
-      ...soleSurvivorPick,
-      episodesHeld: episodes
-    };
+    try {
+      const { data, error } = await supabase
+        .from('sole_survivor_picks')
+        .update({ episodes_held: episodes })
+        .eq('user_id', user.id)
+        .eq('season_id', 1)
+        .eq('is_active', true)
+        .select(`
+          *,
+          contestants (*)
+        `)
+        .single();
 
-    setSoleSurvivorPick(updatedPick);
+      if (error) throw error;
 
-    // Save to localStorage
-    localStorage.setItem('survivor_sole_survivor_pick', JSON.stringify({
-      contestantId: updatedPick.id,
-      selectedAt: updatedPick.selectedAt,
-      episodesHeld: episodes
-    }));
+      setSoleSurvivorPick(data);
+      return data;
+    } catch (error) {
+      console.error('Error updating episodes held:', error);
+      return null;
+    }
   };
 
-  const resetSoleSurvivor = () => {
-    setSoleSurvivorPick(null);
-    setIsSoleSurvivorSubmitted(false);
-    localStorage.removeItem('survivor_sole_survivor_pick');
-    localStorage.removeItem('survivor_sole_survivor_submitted');
+  const resetSoleSurvivor = async () => {
+    if (!user) return;
+
+    try {
+      await supabase
+        .from('sole_survivor_picks')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('season_id', 1);
+
+      setSoleSurvivorPick(null);
+      setIsSoleSurvivorSubmitted(false);
+    } catch (error) {
+      console.error('Error resetting sole survivor:', error);
+    }
   };
 
   const getTimeUntilDeadline = () => {
@@ -136,11 +172,13 @@ export const SoleSurvivorProvider = ({ children }) => {
     isSoleSurvivorSubmitted,
     isSoleSurvivorOpen,
     soleSurvivorDeadline,
+    loading,
     selectSoleSurvivor,
     changeSoleSurvivor,
     updateEpisodesHeld,
     resetSoleSurvivor,
-    getTimeUntilDeadline
+    getTimeUntilDeadline,
+    loadSoleSurvivorData
   };
 
   return (

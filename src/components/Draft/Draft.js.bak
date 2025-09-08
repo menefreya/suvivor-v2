@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
+import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { Target, Clock, AlertCircle, CheckCircle, Save, RotateCcw, Trophy } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useDraft } from '../../contexts/DraftContext';

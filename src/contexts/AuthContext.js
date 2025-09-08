@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { supabase } from '../lib/supabase';
 
 const AuthContext = createContext();
 
@@ -15,81 +16,95 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check for existing session on app load
-    const savedUser = localStorage.getItem('survivor_user');
-    if (savedUser) {
-      try {
-        setUser(JSON.parse(savedUser));
-      } catch (error) {
-        localStorage.removeItem('survivor_user');
+    // Get initial session
+    const getSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        await fetchUserProfile(session.user.id);
       }
-    }
-    setLoading(false);
+      setLoading(false);
+    };
+
+    getSession();
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session?.user) {
+        await fetchUserProfile(session.user.id);
+      } else {
+        setUser(null);
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
+
+  const fetchUserProfile = async (userId) => {
+    try {
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (error) throw error;
+      setUser(data);
+    } catch (error) {
+      console.error('Error fetching user profile:', error);
+    }
+  };
 
   const login = async (email, password) => {
     try {
-      // Simulate API call - replace with actual authentication
-      if (email === 'admin@survivor.com' && password === 'admin123') {
-        const userData = {
-          id: 1,
-          email: email,
-          username: 'Admin',
-          firstName: 'Admin',
-          lastName: 'User',
-          isAdmin: true,
-          createdAt: new Date().toISOString()
-        };
-        
-        setUser(userData);
-        localStorage.setItem('survivor_user', JSON.stringify(userData));
-        return { success: true };
-      } else if (email === 'player@survivor.com' && password === 'player123') {
-        const userData = {
-          id: 2,
-          email: email,
-          username: 'Player',
-          firstName: 'Test',
-          lastName: 'Player',
-          isAdmin: false,
-          createdAt: new Date().toISOString()
-        };
-        
-        setUser(userData);
-        localStorage.setItem('survivor_user', JSON.stringify(userData));
-        return { success: true };
-      } else {
-        return { success: false, error: 'Invalid email or password' };
-      }
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+
+      if (error) throw error;
+
+      return { success: true };
     } catch (error) {
-      return { success: false, error: 'Login failed. Please try again.' };
+      return { success: false, error: error.message };
     }
   };
 
   const register = async (userData) => {
     try {
-      // Simulate API call - replace with actual registration
-      const newUser = {
-        id: Date.now(),
+      // Register with Supabase Auth
+      const { data, error } = await supabase.auth.signUp({
         email: userData.email,
-        username: userData.username,
-        firstName: userData.firstName,
-        lastName: userData.lastName,
-        isAdmin: false,
-        createdAt: new Date().toISOString()
-      };
-      
-      setUser(newUser);
-      localStorage.setItem('survivor_user', JSON.stringify(newUser));
+        password: userData.password
+      });
+
+      if (error) throw error;
+
+      // Create user profile
+      const { error: profileError } = await supabase
+        .from('user_profiles')
+        .insert([{
+          id: data.user.id,
+          email: userData.email,
+          username: userData.username,
+          first_name: userData.firstName,
+          last_name: userData.lastName
+        }]);
+
+      if (profileError) throw profileError;
+
       return { success: true };
     } catch (error) {
-      return { success: false, error: 'Registration failed. Please try again.' };
+      return { success: false, error: error.message };
     }
   };
 
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem('survivor_user');
+  const logout = async () => {
+    try {
+      await supabase.auth.signOut();
+      setUser(null);
+    } catch (error) {
+      console.error('Error logging out:', error);
+    }
   };
 
   const value = {

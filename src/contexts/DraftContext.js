@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { contestants } from '../data/contestants';
+import { supabase } from '../lib/supabase';
+import { useAuth } from './AuthContext';
 
 const DraftContext = createContext();
 
@@ -12,30 +13,54 @@ export const useDraft = () => {
 };
 
 export const DraftProvider = ({ children }) => {
+  const { user } = useAuth();
   const [draftRankings, setDraftRankings] = useState([]);
   const [draftPicks, setDraftPicks] = useState([]);
   const [isDraftSubmitted, setIsDraftSubmitted] = useState(false);
   const [draftDeadline, setDraftDeadline] = useState(new Date('2026-02-15T23:59:59')); // After Episode 2
   const [isDraftOpen, setIsDraftOpen] = useState(true);
+  const [loading, setLoading] = useState(false);
 
-  const calculateDraftPicks = (rankings) => {
-    if (!rankings || rankings.length === 0) return;
+  const calculateDraftPicks = async (rankings) => {
+    if (!rankings || rankings.length === 0 || !user) return;
     
     // Calculate draft picks based on current rankings
-    const sortedRankings = [...rankings].sort((a, b) => a.rank - b.rank);
-    const activeContestants = sortedRankings.filter(c => !c.eliminated);
+    const sortedRankings = [...rankings].sort((a, b) => a.rank_position - b.rank_position);
+    const activeContestants = sortedRankings.filter(r => !r.contestants?.is_eliminated);
     
     // Assign top 2 available contestants
-    const picks = activeContestants.slice(0, 2).map((contestant, index) => ({
-      ...contestant,
-      pickNumber: index + 1,
-      assignedAt: new Date().toISOString()
+    const picks = activeContestants.slice(0, 2).map((ranking, index) => ({
+      user_id: user.id,
+      season_id: 1,
+      contestant_id: ranking.contestants?.id || ranking.contestant_id,
+      pick_number: index + 1,
+      assigned_from_rank: ranking.rank_position,
+      is_active: true
     }));
 
-    setDraftPicks(picks);
-    
-    // Save to localStorage
-    localStorage.setItem('survivor_draft_picks', JSON.stringify(picks));
+    // Save picks to database
+    try {
+      // Delete existing picks
+      await supabase
+        .from('draft_picks')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('season_id', 1);
+
+      // Insert new picks
+      const { data, error } = await supabase
+        .from('draft_picks')
+        .insert(picks)
+        .select(`
+          *,
+          contestants (*)
+        `);
+
+      if (error) throw error;
+      setDraftPicks(data);
+    } catch (error) {
+      console.error('Error saving draft picks:', error);
+    }
   };
 
   useEffect(() => {
@@ -47,98 +72,172 @@ export const DraftProvider = ({ children }) => {
       setIsDraftOpen(true);
     }
 
-    // Load saved draft data
-    const savedRankings = localStorage.getItem('survivor_draft_rankings');
-    const savedPicks = localStorage.getItem('survivor_draft_picks');
-    const savedSubmitted = localStorage.getItem('survivor_draft_submitted');
-
-    if (savedRankings) {
-      try {
-        const rankings = JSON.parse(savedRankings);
-        setDraftRankings(rankings);
-        // Calculate picks based on loaded rankings
-        calculateDraftPicks(rankings);
-      } catch (error) {
-        console.error('Error loading draft rankings:', error);
-      }
-    } else {
-      // Initialize with default rankings (random order)
-      const shuffled = [...contestants].sort(() => Math.random() - 0.5);
-      const initialRankings = shuffled.map((contestant, index) => ({
-        ...contestant,
-        rank: index + 1
-      }));
-      setDraftRankings(initialRankings);
-      calculateDraftPicks(initialRankings);
+    if (user) {
+      loadDraftData();
     }
+  }, [user, draftDeadline]);
 
-    if (savedPicks) {
-      try {
-        setDraftPicks(JSON.parse(savedPicks));
-      } catch (error) {
-        console.error('Error loading draft picks:', error);
-      }
-    }
-
-    if (savedSubmitted === 'true') {
-      setIsDraftSubmitted(true);
-    }
-  }, [draftDeadline]);
-
-  const updateRanking = (contestantId, newRank) => {
-    setDraftRankings(prev => {
-      const updated = [...prev];
-      
-      // Find the contestant being moved
-      const contestantIndex = updated.findIndex(c => c.id === contestantId);
-      if (contestantIndex === -1) return prev;
-
-      const contestant = updated[contestantIndex];
-      
-      // Find the contestant currently at the new rank
-      const targetIndex = updated.findIndex(c => c.rank === newRank);
-      
-      if (targetIndex !== -1) {
-        // Swap ranks
-        updated[contestantIndex] = { ...updated[targetIndex], rank: contestant.rank };
-        updated[targetIndex] = { ...contestant, rank: newRank };
-      } else {
-        // Just update the rank
-        updated[contestantIndex] = { ...contestant, rank: newRank };
-      }
-
-      // Save to localStorage
-      localStorage.setItem('survivor_draft_rankings', JSON.stringify(updated));
-      return updated;
-    });
-  };
-
-  const updateRankings = (newRankings) => {
-    setDraftRankings(newRankings);
-    localStorage.setItem('survivor_draft_rankings', JSON.stringify(newRankings));
+  const loadDraftData = async () => {
+    if (!user) return;
     
-    // Automatically recalculate picks when rankings change
-    calculateDraftPicks(newRankings);
+    setLoading(true);
+    try {
+      // Load draft rankings
+      const { data: rankings, error: rankingsError } = await supabase
+        .from('draft_rankings')
+        .select(`
+          *,
+          contestants (*)
+        `)
+        .eq('user_id', user.id)
+        .eq('season_id', 1)
+        .order('rank_position');
+
+      if (rankingsError) throw rankingsError;
+
+      if (rankings.length > 0) {
+        setDraftRankings(rankings);
+        setIsDraftSubmitted(rankings[0].is_submitted);
+        await calculateDraftPicks(rankings);
+      } else {
+        // Initialize with default rankings
+        await initializeDefaultRankings();
+      }
+
+      // Load draft picks
+      const { data: picks, error: picksError } = await supabase
+        .from('draft_picks')
+        .select(`
+          *,
+          contestants (*)
+        `)
+        .eq('user_id', user.id)
+        .eq('season_id', 1)
+        .eq('is_active', true)
+        .order('pick_number');
+
+      if (picksError) throw picksError;
+      setDraftPicks(picks);
+
+    } catch (error) {
+      console.error('Error loading draft data:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // Remove the old submitDraft function and replace with saveDraft
-  const saveDraft = () => {
-    // Just save current state - picks are already calculated
-    localStorage.setItem('survivor_draft_rankings', JSON.stringify(draftRankings));
-    localStorage.setItem('survivor_draft_picks', JSON.stringify(draftPicks));
-    setIsDraftSubmitted(true);
-    localStorage.setItem('survivor_draft_submitted', 'true');
+  const initializeDefaultRankings = async () => {
+    try {
+      // Get all contestants
+      const { data: contestants, error } = await supabase
+        .from('contestants')
+        .select('*')
+        .eq('season_id', 1);
+
+      if (error) throw error;
+
+      // Create shuffled rankings
+      const shuffled = [...contestants].sort(() => Math.random() - 0.5);
+      const rankings = shuffled.map((contestant, index) => ({
+        user_id: user.id,
+        season_id: 1,
+        contestant_id: contestant.id,
+        rank_position: index + 1,
+        is_submitted: false
+      }));
+
+      // Insert rankings
+      const { error: insertError } = await supabase
+        .from('draft_rankings')
+        .insert(rankings);
+
+      if (insertError) throw insertError;
+
+      await loadDraftData();
+    } catch (error) {
+      console.error('Error initializing rankings:', error);
+    }
+  };
+
+  const updateRanking = async (contestantId, newRank) => {
+    if (!user) return;
+
+    try {
+      // This would be complex to implement efficiently, for now use updateRankings
+      console.log('Use updateRankings for batch updates');
+    } catch (error) {
+      console.error('Error updating ranking:', error);
+    }
+  };
+
+  const updateRankings = async (newRankings) => {
+    if (!user) return;
+
+    try {
+      // Update local state immediately for responsive UI
+      setDraftRankings(newRankings);
+
+      // Prepare data for database
+      const rankingsData = newRankings.map(ranking => ({
+        user_id: user.id,
+        season_id: 1,
+        contestant_id: ranking.contestants?.id || ranking.id,
+        rank_position: ranking.rank || ranking.rank_position,
+        is_submitted: isDraftSubmitted
+      }));
+
+      // Delete existing and insert new rankings
+      await supabase
+        .from('draft_rankings')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('season_id', 1);
+
+      const { error } = await supabase
+        .from('draft_rankings')
+        .insert(rankingsData);
+
+      if (error) throw error;
+
+      // Recalculate draft picks
+      await calculateDraftPicks(newRankings);
+
+    } catch (error) {
+      console.error('Error updating rankings:', error);
+      // Reload data from server on error
+      await loadDraftData();
+    }
+  };
+
+  const saveDraft = async () => {
+    if (!user) return;
+
+    try {
+      // Mark as submitted
+      await supabase
+        .from('draft_rankings')
+        .update({ 
+          is_submitted: true,
+          submitted_at: new Date().toISOString()
+        })
+        .eq('user_id', user.id)
+        .eq('season_id', 1);
+
+      setIsDraftSubmitted(true);
+    } catch (error) {
+      console.error('Error saving draft:', error);
+    }
   };
 
   const getReplacementPick = () => {
     if (!isDraftSubmitted || draftPicks.length === 0) return null;
 
-    const sortedRankings = [...draftRankings].sort((a, b) => a.rank - b.rank);
-    const activeContestants = sortedRankings.filter(c => !c.eliminated);
+    const sortedRankings = [...draftRankings].sort((a, b) => a.rank_position - b.rank_position);
+    const activeContestants = sortedRankings.filter(r => !r.contestants?.is_eliminated);
     
     // Find next available contestant not already picked
-    const currentPickIds = draftPicks.map(p => p.id);
-    const nextAvailable = activeContestants.find(c => !currentPickIds.includes(c.id));
+    const currentPickIds = draftPicks.map(p => p.contestant_id);
+    const nextAvailable = activeContestants.find(r => !currentPickIds.includes(r.contestant_id));
     
     return nextAvailable;
   };
@@ -146,41 +245,91 @@ export const DraftProvider = ({ children }) => {
   const getAllReplacementPicks = () => {
     if (!isDraftSubmitted || draftPicks.length === 0) return [];
 
-    const sortedRankings = [...draftRankings].sort((a, b) => a.rank - b.rank);
-    const activeContestants = sortedRankings.filter(c => !c.eliminated);
+    const sortedRankings = [...draftRankings].sort((a, b) => a.rank_position - b.rank_position);
+    const activeContestants = sortedRankings.filter(r => !r.contestants?.is_eliminated);
     
     // Find all available contestants not already picked, in draft order
-    const currentPickIds = draftPicks.map(p => p.id);
-    const allAvailable = activeContestants.filter(c => !currentPickIds.includes(c.id));
+    const currentPickIds = draftPicks.map(p => p.contestant_id);
+    const allAvailable = activeContestants.filter(r => !currentPickIds.includes(r.contestant_id));
     
     return allAvailable;
   };
 
-  const replaceEliminatedContestant = (eliminatedContestantId) => {
+  const replaceEliminatedContestant = async (eliminatedContestantId) => {
+    if (!user) return null;
+
     const replacement = getReplacementPick();
     if (!replacement) return null;
 
-    setDraftPicks(prev => {
-      const updated = prev.map(pick => 
-        pick.id === eliminatedContestantId 
-          ? { ...replacement, pickNumber: pick.pickNumber, assignedAt: new Date().toISOString() }
-          : pick
-      );
-      
-      localStorage.setItem('survivor_draft_picks', JSON.stringify(updated));
-      return updated;
-    });
+    try {
+      // Deactivate the eliminated pick
+      await supabase
+        .from('draft_picks')
+        .update({ 
+          is_active: false,
+          replaced_at: new Date().toISOString()
+        })
+        .eq('user_id', user.id)
+        .eq('contestant_id', eliminatedContestantId);
 
-    return replacement;
+      // Create new pick
+      const { data, error } = await supabase
+        .from('draft_picks')
+        .insert([{
+          user_id: user.id,
+          season_id: 1,
+          contestant_id: replacement.contestant_id,
+          pick_number: draftPicks.find(p => p.contestant_id === eliminatedContestantId)?.pick_number || 1,
+          assigned_from_rank: replacement.rank_position,
+          is_active: true
+        }])
+        .select(`
+          *,
+          contestants (*)
+        `)
+        .single();
+
+      if (error) throw error;
+
+      // Update local state
+      setDraftPicks(prev => prev.map(pick => 
+        pick.contestant_id === eliminatedContestantId ? data : pick
+      ));
+
+      return data;
+    } catch (error) {
+      console.error('Error replacing eliminated contestant:', error);
+      return null;
+    }
   };
 
-  const resetDraft = () => {
-    setDraftRankings([]);
-    setDraftPicks([]);
-    setIsDraftSubmitted(false);
-    localStorage.removeItem('survivor_draft_rankings');
-    localStorage.removeItem('survivor_draft_picks');
-    localStorage.removeItem('survivor_draft_submitted');
+  const resetDraft = async () => {
+    if (!user) return;
+
+    try {
+      // Delete all draft data for user
+      await supabase
+        .from('draft_rankings')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('season_id', 1);
+
+      await supabase
+        .from('draft_picks')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('season_id', 1);
+
+      // Reset local state
+      setDraftRankings([]);
+      setDraftPicks([]);
+      setIsDraftSubmitted(false);
+
+      // Reinitialize
+      await initializeDefaultRankings();
+    } catch (error) {
+      console.error('Error resetting draft:', error);
+    }
   };
 
   const getTimeUntilDeadline = () => {
@@ -202,6 +351,7 @@ export const DraftProvider = ({ children }) => {
     isDraftSubmitted,
     isDraftOpen,
     draftDeadline,
+    loading,
     updateRanking,
     updateRankings,
     saveDraft,
@@ -209,7 +359,8 @@ export const DraftProvider = ({ children }) => {
     getAllReplacementPicks,
     replaceEliminatedContestant,
     resetDraft,
-    getTimeUntilDeadline
+    getTimeUntilDeadline,
+    loadDraftData
   };
 
   return (
