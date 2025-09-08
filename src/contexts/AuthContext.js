@@ -11,114 +11,93 @@ export const useAuth = () => {
 };
 
 export const AuthProvider = ({ children }) => {
-  const [currentUser, setCurrentUser] = useState(null);
-  const [users, setUsers] = useState([]);
+  const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Load users from localStorage on mount
   useEffect(() => {
-    const savedUsers = localStorage.getItem('survivorUsers');
-    const savedCurrentUser = localStorage.getItem('survivorCurrentUser');
-    
-    if (savedUsers) {
-      setUsers(JSON.parse(savedUsers));
+    // Check for existing session on app load
+    const savedUser = localStorage.getItem('survivor_user');
+    if (savedUser) {
+      try {
+        setUser(JSON.parse(savedUser));
+      } catch (error) {
+        localStorage.removeItem('survivor_user');
+      }
     }
-    
-    if (savedCurrentUser) {
-      setCurrentUser(JSON.parse(savedCurrentUser));
-    }
-    
     setLoading(false);
   }, []);
 
-  // Save to localStorage when users or currentUser changes
-  useEffect(() => {
-    if (!loading) {
-      localStorage.setItem('survivorUsers', JSON.stringify(users));
-    }
-  }, [users, loading]);
-
-  useEffect(() => {
-    if (!loading) {
-      if (currentUser) {
-        localStorage.setItem('survivorCurrentUser', JSON.stringify(currentUser));
+  const login = async (email, password) => {
+    try {
+      // Simulate API call - replace with actual authentication
+      if (email === 'admin@survivor.com' && password === 'admin123') {
+        const userData = {
+          id: 1,
+          email: email,
+          username: 'Admin',
+          firstName: 'Admin',
+          lastName: 'User',
+          isAdmin: true,
+          createdAt: new Date().toISOString()
+        };
+        
+        setUser(userData);
+        localStorage.setItem('survivor_user', JSON.stringify(userData));
+        return { success: true };
+      } else if (email === 'player@survivor.com' && password === 'player123') {
+        const userData = {
+          id: 2,
+          email: email,
+          username: 'Player',
+          firstName: 'Test',
+          lastName: 'Player',
+          isAdmin: false,
+          createdAt: new Date().toISOString()
+        };
+        
+        setUser(userData);
+        localStorage.setItem('survivor_user', JSON.stringify(userData));
+        return { success: true };
       } else {
-        localStorage.removeItem('survivorCurrentUser');
+        return { success: false, error: 'Invalid email or password' };
       }
+    } catch (error) {
+      return { success: false, error: 'Login failed. Please try again.' };
     }
-  }, [currentUser, loading]);
-
-  const isUsernameUnique = (username) => {
-    return !users.some(user => user.username.toLowerCase() === username.toLowerCase());
   };
 
-  const register = (username) => {
-    if (!username || username.trim().length < 3) {
-      throw new Error('Username must be at least 3 characters long');
+  const register = async (userData) => {
+    try {
+      // Simulate API call - replace with actual registration
+      const newUser = {
+        id: Date.now(),
+        email: userData.email,
+        username: userData.username,
+        firstName: userData.firstName,
+        lastName: userData.lastName,
+        isAdmin: false,
+        createdAt: new Date().toISOString()
+      };
+      
+      setUser(newUser);
+      localStorage.setItem('survivor_user', JSON.stringify(newUser));
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: 'Registration failed. Please try again.' };
     }
-
-    if (!isUsernameUnique(username.trim())) {
-      throw new Error('Username already exists');
-    }
-
-    const newUser = {
-      id: Date.now(),
-      username: username.trim(),
-      createdAt: new Date().toISOString(),
-      draftRankings: {}, // { contestantId: rank } - rank 1 is highest
-      votePredictions: {},
-      winnerPrediction: {
-        contestantId: null,
-        episodes: []
-      },
-      scores: {
-        survivorPoints: 0,
-        votePoints: 0,
-        bonusPoints: 0,
-        total: 0
-      }
-    };
-
-    setUsers(prev => [...prev, newUser]);
-    setCurrentUser(newUser);
-    return newUser;
-  };
-
-  const login = (username) => {
-    const user = users.find(u => u.username.toLowerCase() === username.toLowerCase());
-    if (!user) {
-      throw new Error('Username not found');
-    }
-    setCurrentUser(user);
-    return user;
   };
 
   const logout = () => {
-    setCurrentUser(null);
-  };
-
-  const updateUser = (updates) => {
-    if (!currentUser) return;
-
-    const updatedUser = { ...currentUser, ...updates };
-    setCurrentUser(updatedUser);
-    
-    setUsers(prev => 
-      prev.map(user => 
-        user.id === currentUser.id ? updatedUser : user
-      )
-    );
+    setUser(null);
+    localStorage.removeItem('survivor_user');
   };
 
   const value = {
-    currentUser,
-    users,
-    loading,
-    register,
+    user,
     login,
+    register,
     logout,
-    updateUser,
-    isUsernameUnique
+    loading
   };
 
   return (

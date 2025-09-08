@@ -1,70 +1,119 @@
-# Getting Started with Create React App
+# Survivor Fantasy League
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+A React-based fantasy league application for Survivor Season 49. Draft contestants, make predictions, and compete with friends!
 
-## Available Scripts
+## Features
 
-In the project directory, you can run:
+- **User Authentication**: Login/Register with email and password
+- **Dashboard**: View your team, points, and recent activity
+- **Contestant Management**: Track all Season 49 contestants
+- **Scoring System**: Points for immunity wins, idol finds, eliminations, etc.
+- **Admin Interface**: Manage episodes and scoring (for admins)
 
-### `npm start`
+## Getting Started
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+### Prerequisites
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+- Node.js (version 14 or higher)
+- npm or yarn
 
-### `npm test`
+### Installation
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+1. Clone the repository:
+```bash
+git clone <repository-url>
+cd survivor-app
+```
 
-### `npm run build`
+2. Install dependencies:
+```bash
+npm install
+```
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+3. Start the development server:
+```bash
+npm start
+```
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+4. Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+## Demo Accounts
 
-### `npm run eject`
+For testing purposes, you can use these demo accounts:
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+- **Admin Account**: 
+  - Email: `admin@survivor.com`
+  - Password: `admin123`
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+- **Player Account**: 
+  - Email: `player@survivor.com`
+  - Password: `player123`
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+## Project Structure
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+```
+src/
+├── components/
+│   ├── Auth/
+│   │   └── Login.js          # Login/Register component
+│   ├── Dashboard/
+│   │   └── Dashboard.js      # Main dashboard
+│   └── AppRoutes.js          # Route configuration
+├── contexts/
+│   └── AuthContext.js        # Authentication state management
+├── App.js                    # Main app component
+├── index.js                  # App entry point
+└── index.css                 # Global styles with Tailwind
+```
 
-## Learn More
+## Technology Stack
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+- **React 18** - Frontend framework
+- **React Router** - Client-side routing
+- **Tailwind CSS** - Utility-first CSS framework
+- **Lucide React** - Icon library
+- **Context API** - State management
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+## Features Overview
 
-### Code Splitting
+### Authentication
+- Email/password login and registration
+- Session persistence with localStorage
+- Protected routes
+- Demo accounts for testing
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+### Dashboard
+- Current rank and points display
+- Team overview with contestant information
+- Recent activity feed
+- Quick action buttons
 
-### Analyzing the Bundle Size
+### Contestant Data
+The app includes all 18 contestants from Survivor Season 49:
+- Alex Moore, Jake Latimer, Jason Treul, Jawan Pitts
+- Jeremiah Ing, Kimberly "Annie" Davis, Kristina Mills, Matt Williams
+- Michelle "MC" Chukwujekwu, Nate Moore, Nicole Mazullo, Rizo Velovic
+- Sage Ahrens-Nichols, Savannah Louie, Shannon Fairweather
+- Sophi Balerdi, Sophie Segreti, Steven Ramm
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+## Future Enhancements
 
-### Making a Progressive Web App
+Based on the PRD, upcoming features will include:
+- Draft system with contestant ranking
+- Weekly predictions and scoring
+- Leaderboard and standings
+- Admin scoring interface
+- Episode management
+- Contestant profile pages
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+## Contributing
 
-### Advanced Configuration
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Test thoroughly
+5. Submit a pull request
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+## License
 
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+This project is licensed under the MIT License.
