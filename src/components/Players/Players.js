@@ -101,7 +101,7 @@ const Players = () => {
                   <div className="flex items-center space-x-3">
                     <div className="w-12 h-12 bg-gray-300 rounded-full flex items-center justify-center">
                       <span className="text-lg font-bold text-gray-700">
-                        {player.name.split(' ').map(n => n[0]).join('')}
+                        {(player.name || 'Unknown').split(' ').map(n => n[0]).join('')}
                       </span>
                     </div>
                     <div>

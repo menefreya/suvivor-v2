@@ -22,12 +22,176 @@ import {
   Crown,
   Target
 } from 'lucide-react';
-import { contestants } from '../../data/contestants';
+import { supabase } from '../../lib/supabase';
+
+// Contestant Display Component
+const ContestantDisplay = ({ contestant }) => {
+  return (
+    <>
+      <h3 className="font-medium text-gray-900 mb-1">{contestant.name}</h3>
+      <p className="text-sm text-gray-600 mb-2">{contestant.occupation}</p>
+      
+      <div className="space-y-2">
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-gray-500">Tribe:</span>
+          <span className="text-sm font-medium">{contestant.tribe}</span>
+        </div>
+        
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-gray-500">Age:</span>
+          <span className="text-sm">{contestant.age}</span>
+        </div>
+        
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-gray-500">Hometown:</span>
+          <span className="text-sm">{contestant.hometown}</span>
+        </div>
+        
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-gray-500">Points:</span>
+          <span className="text-sm font-medium">{contestant.points || 0}</span>
+        </div>
+        
+        {contestant.image_url && (
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-500">Image URL:</span>
+            <span className="text-xs text-blue-600 truncate">{contestant.image_url}</span>
+          </div>
+        )}
+      </div>
+    </>
+  );
+};
+
+// Edit Contestant Form Component
+const EditContestantForm = ({ contestant, onSave, onCancel }) => {
+  const [formData, setFormData] = useState({
+    name: contestant.name || '',
+    occupation: contestant.occupation || '',
+    tribe: contestant.tribe || '',
+    age: contestant.age || '',
+    hometown: contestant.hometown || '',
+    image_url: contestant.image_url || ''
+  });
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    await onSave(contestant.id, formData);
+  };
+
+  const handleChange = (field, value) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-3">
+      <div>
+        <label className="block text-xs text-gray-500 mb-1">Name</label>
+        <input
+          type="text"
+          value={formData.name}
+          onChange={(e) => handleChange('name', e.target.value)}
+          className="w-full text-sm border rounded px-2 py-1"
+          required
+        />
+      </div>
+      
+      <div>
+        <label className="block text-xs text-gray-500 mb-1">Occupation</label>
+        <input
+          type="text"
+          value={formData.occupation}
+          onChange={(e) => handleChange('occupation', e.target.value)}
+          className="w-full text-sm border rounded px-2 py-1"
+        />
+      </div>
+      
+      <div>
+        <label className="block text-xs text-gray-500 mb-1">Tribe</label>
+        <select
+          value={formData.tribe}
+          onChange={(e) => handleChange('tribe', e.target.value)}
+          className="w-full text-sm border rounded px-2 py-1"
+        >
+          <option value="Ratu">Ratu</option>
+          <option value="Tika">Tika</option>
+          <option value="Soka">Soka</option>
+        </select>
+      </div>
+      
+      <div>
+        <label className="block text-xs text-gray-500 mb-1">Age</label>
+        <input
+          type="number"
+          value={formData.age}
+          onChange={(e) => handleChange('age', e.target.value)}
+          className="w-full text-sm border rounded px-2 py-1"
+        />
+      </div>
+      
+      <div>
+        <label className="block text-xs text-gray-500 mb-1">Hometown</label>
+        <input
+          type="text"
+          value={formData.hometown}
+          onChange={(e) => handleChange('hometown', e.target.value)}
+          className="w-full text-sm border rounded px-2 py-1"
+        />
+      </div>
+      
+      <div>
+        <label className="block text-xs text-gray-500 mb-1">Image URL</label>
+        <input
+          type="url"
+          value={formData.image_url}
+          onChange={(e) => handleChange('image_url', e.target.value)}
+          className="w-full text-sm border rounded px-2 py-1"
+          placeholder="https://example.com/image.jpg"
+        />
+        <p className="text-xs text-gray-400 mt-1">Enter a cloud storage URL for the contestant's image</p>
+        
+        {/* Image Preview */}
+        {formData.image_url && (
+          <div className="mt-2">
+            <p className="text-xs text-gray-500 mb-1">Preview:</p>
+            <img
+              src={formData.image_url}
+              alt="Preview"
+              className="w-16 h-16 object-cover object-top rounded-full border"
+              onError={(e) => {
+                e.target.src = `https://via.placeholder.com/64x64/cccccc/666666?text=Error`;
+              }}
+            />
+          </div>
+        )}
+      </div>
+      
+      <div className="flex gap-2">
+        <button
+          type="submit"
+          className="flex-1 bg-green-600 text-white text-sm py-1 px-2 rounded hover:bg-green-700"
+        >
+          Save
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          className="flex-1 bg-gray-600 text-white text-sm py-1 px-2 rounded hover:bg-gray-700"
+        >
+          Cancel
+        </button>
+      </div>
+    </form>
+  );
+};
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('scoring');
   const [episode, setEpisode] = useState(1);
-  const [contestantsData, setContestantsData] = useState(contestants);
+  const [contestantsData, setContestantsData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [editingContestant, setEditingContestant] = useState(null);
   const [teams, setTeams] = useState(['Ratu', 'Tika', 'Soka']);
   const [scoring, setScoring] = useState({});
   const [editingTeams, setEditingTeams] = useState(false);
@@ -70,6 +234,63 @@ const AdminDashboard = () => {
     { key: 'rewardTeam', label: 'Team Reward', points: 1, icon: Award }
   ];
 
+  // Database functions
+  useEffect(() => {
+    fetchContestants();
+  }, []);
+
+  const fetchContestants = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const { data, error } = await supabase
+        .from('contestants')
+        .select('*')
+        .eq('season_id', 1)
+        .order('name');
+
+      if (error) throw error;
+      
+      setContestantsData(data || []);
+    } catch (error) {
+      console.error('Error fetching contestants:', error);
+      setError('Failed to load contestants');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateContestant = async (contestantId, updates) => {
+    try {
+      const { error } = await supabase
+        .from('contestants')
+        .update(updates)
+        .eq('id', contestantId);
+
+      if (error) throw error;
+
+      // Update local state
+      setContestantsData(prev => prev.map(c => 
+        c.id === contestantId ? { ...c, ...updates } : c
+      ));
+
+      setEditingContestant(null);
+    } catch (error) {
+      console.error('Error updating contestant:', error);
+      setError('Failed to update contestant');
+    }
+  };
+
+  const toggleEliminated = async (contestantId) => {
+    const contestant = contestantsData.find(c => c.id === contestantId);
+    if (!contestant) return;
+
+    await updateContestant(contestantId, { 
+      is_eliminated: !contestant.is_eliminated 
+    });
+  };
+
   // Helper functions
   const isChecked = (contestantId, scoreType) => {
     return scoring[`${contestantId}-${scoreType}`] || false;
@@ -105,10 +326,8 @@ const AdminDashboard = () => {
     return individualTotal + teamTotal;
   };
 
-  const updateTeam = (contestantId, newTeam) => {
-    setContestantsData(prev => prev.map(c => 
-      c.id === contestantId ? { ...c, tribe: newTeam } : c
-    ));
+  const updateTeam = async (contestantId, newTeam) => {
+    await updateContestant(contestantId, { tribe: newTeam });
   };
 
   const assignTeamScore = (team, scoreType) => {
@@ -150,12 +369,6 @@ const AdminDashboard = () => {
   const saveScoring = () => {
     console.log('Saving episode', episode, 'scoring:', scoring);
     alert('Episode scoring saved successfully!');
-  };
-
-  const toggleEliminated = (contestantId) => {
-    setContestantsData(prev => prev.map(c => 
-      c.id === contestantId ? { ...c, eliminated: !c.eliminated } : c
-    ));
   };
 
   const addEpisode = () => {
@@ -496,7 +709,7 @@ const AdminDashboard = () => {
                       const total = calculateTotal(contestant.id);
                       return (
                         <div key={contestant.id} className="text-center">
-                          <p className="font-medium text-gray-900 truncate">{contestant.name.split(' ')[0]}</p>
+                          <p className="font-medium text-gray-900 truncate">{(contestant.name || 'Unknown').split(' ')[0]}</p>
                           <p className={`font-bold ${
                             total > 0 ? 'text-green-700' : 
                             total < 0 ? 'text-red-700' : 'text-gray-700'
@@ -602,6 +815,13 @@ const AdminDashboard = () => {
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-bold text-gray-900">Contestant Management</h2>
                 <div className="flex items-center gap-2">
+                  <button 
+                    onClick={fetchContestants}
+                    className="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700 flex items-center gap-2"
+                  >
+                    <Settings size={16} />
+                    Refresh
+                  </button>
                   <button className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 flex items-center gap-2">
                     <Upload size={16} />
                     Import CSV
@@ -613,65 +833,63 @@ const AdminDashboard = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {contestantsData.map(contestant => (
-                  <div key={contestant.id} className="border rounded-lg p-4">
-                    <div className="flex items-start justify-between mb-3">
-                      <img
-                        src={`/contestant-images/${contestant.image}`}
-                        alt={contestant.name}
-                        className="w-16 h-16 object-cover object-top rounded-full"
-                        onError={(e) => {
-                          e.target.src = `https://via.placeholder.com/64x64/cccccc/666666?text=${contestant.name.split(' ').map(n => n[0]).join('')}`;
-                        }}
-                      />
-                      <button
-                        onClick={() => toggleEliminated(contestant.id)}
-                        className={`px-3 py-1 rounded text-sm ${
-                          contestant.eliminated 
-                            ? 'bg-red-600 text-white' 
-                            : 'bg-green-600 text-white'
-                        }`}
-                      >
-                        {contestant.eliminated ? 'Eliminated' : 'Active'}
-                      </button>
+              {error && (
+                <div className="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md">
+                  {error}
+                </div>
+              )}
+
+              {loading ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-survivor-orange"></div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {contestantsData.map(contestant => (
+                    <div key={contestant.id} className="border rounded-lg p-4">
+                      <div className="flex items-start justify-between mb-3">
+                        <img
+                          src={contestant.image_url || `https://via.placeholder.com/64x64/cccccc/666666?text=${(contestant.name || 'Unknown').split(' ').map(n => n[0]).join('')}`}
+                          alt={contestant.name}
+                          className="w-16 h-16 object-cover object-top rounded-full"
+                          onError={(e) => {
+                            const name = contestant.name || 'Unknown';
+                            e.target.src = `https://via.placeholder.com/64x64/cccccc/666666?text=${name.split(' ').map(n => n[0]).join('')}`;
+                          }}
+                        />
+                        <div className="flex flex-col gap-2">
+                          <button
+                            onClick={() => toggleEliminated(contestant.id)}
+                            className={`px-3 py-1 rounded text-sm ${
+                              contestant.is_eliminated 
+                                ? 'bg-red-600 text-white' 
+                                : 'bg-green-600 text-white'
+                            }`}
+                          >
+                            {contestant.is_eliminated ? 'Eliminated' : 'Active'}
+                          </button>
+                          <button
+                            onClick={() => setEditingContestant(editingContestant === contestant.id ? null : contestant.id)}
+                            className="px-3 py-1 rounded text-sm bg-blue-600 text-white hover:bg-blue-700"
+                          >
+                            {editingContestant === contestant.id ? 'Cancel' : 'Edit'}
+                          </button>
+                        </div>
+                      </div>
+                      
+                      {editingContestant === contestant.id ? (
+                        <EditContestantForm 
+                          contestant={contestant} 
+                          onSave={updateContestant}
+                          onCancel={() => setEditingContestant(null)}
+                        />
+                      ) : (
+                        <ContestantDisplay contestant={contestant} />
+                      )}
                     </div>
-                    
-                    <h3 className="font-medium text-gray-900 mb-1">{contestant.name}</h3>
-                    <p className="text-sm text-gray-600 mb-2">{contestant.occupation}</p>
-                    
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm text-gray-500">Tribe:</span>
-                        <select 
-                          value={contestant.tribe} 
-                          onChange={(e) => updateTeam(contestant.id, e.target.value)}
-                          className="text-sm border rounded px-2 py-1"
-                        >
-                          {teams.map(team => (
-                            <option key={team} value={team}>{team}</option>
-                          ))}
-                        </select>
-                      </div>
-                      
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm text-gray-500">Age:</span>
-                        <span className="text-sm">{contestant.age}</span>
-                      </div>
-                      
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm text-gray-500">Hometown:</span>
-                        <span className="text-sm">{contestant.hometown}</span>
-                      </div>
-                      
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm text-gray-500">Points:</span>
-                        <span className="text-sm font-medium">{contestant.points}</span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 

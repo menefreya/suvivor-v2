@@ -1,24 +1,71 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Award, Crown, Users, TrendingUp } from 'lucide-react';
 import { useDraft } from '../../contexts/DraftContext';
+import { useSoleSurvivor } from '../../contexts/SoleSurvivorContext';
+import { supabase } from '../../lib/supabase';
 
 const MyTeam = () => {
   const { draftPicks, draftRankings, isDraftSubmitted, getReplacementPick, getAllReplacementPicks } = useDraft();
+  const { soleSurvivorPick } = useSoleSurvivor();
+  const [tribes, setTribes] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch tribes from Supabase
+  useEffect(() => {
+    const fetchTribes = async () => {
+      try {
+        setLoading(true);
+        const { data, error } = await supabase
+          .from('tribes')
+          .select('*')
+          .eq('season_id', 1)
+          .order('name');
+        
+        if (error) throw error;
+        setTribes(data || []);
+      } catch (error) {
+        console.error('Error fetching tribes:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTribes();
+  }, []);
 
   // Debug logging
   console.log('MyTeam Debug:', {
     isDraftSubmitted,
     draftPicks,
-    draftRankings: draftRankings?.length
+    draftRankings: draftRankings?.length,
+    soleSurvivorPick
   });
 
-  const getTribeColor = (tribe) => {
-    const colors = {
+  const getTribeColor = (tribeName) => {
+    const tribe = tribes.find(t => t.name === tribeName);
+    if (tribe && tribe.color) {
+      // Map common color names to Tailwind classes
+      const colorMap = {
+        'red': 'bg-red-500',
+        'blue': 'bg-blue-500',
+        'green': 'bg-green-500',
+        'yellow': 'bg-yellow-500',
+        'purple': 'bg-purple-500',
+        'orange': 'bg-orange-500',
+        'pink': 'bg-pink-500',
+        'indigo': 'bg-indigo-500',
+        'gray': 'bg-gray-500'
+      };
+      return colorMap[tribe.color.toLowerCase()] || `bg-${tribe.color}-500`;
+    }
+    
+    // Fallback to hardcoded colors if tribes not loaded yet
+    const fallbackColors = {
       'Ratu': 'bg-red-500',
       'Tika': 'bg-blue-500',
       'Soka': 'bg-green-500'
     };
-    return colors[tribe] || 'bg-gray-500';
+    return fallbackColors[tribeName] || 'bg-gray-500';
   };
 
   const getOriginalRank = (contestantId) => {
@@ -75,8 +122,12 @@ const MyTeam = () => {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-500">Sole Survivor Pick</p>
-                <p className="text-xl font-semibold text-gray-900">Alex Moore</p>
-                <p className="text-sm text-gray-600">5 episodes held</p>
+                <p className="text-xl font-semibold text-gray-900">
+                  {soleSurvivorPick ? (soleSurvivorPick.name || soleSurvivorPick.contestants?.name) : 'Not Selected'}
+                </p>
+                <p className="text-sm text-gray-600">
+                  {soleSurvivorPick ? 'Selected' : 'No pick yet'}
+                </p>
               </div>
             </div>
           </div>
@@ -90,7 +141,7 @@ const MyTeam = () => {
                 <p className="text-sm font-medium text-gray-500">Active Draft Picks</p>
                 <p className="text-xl font-semibold text-gray-900">{draftPicks.length}</p>
                 <p className="text-sm text-gray-600">
-                  {draftPicks.map(pick => pick.name).join(', ')}
+                  {draftPicks.map(pick => pick.name || pick.contestants?.name).join(', ')}
                 </p>
               </div>
             </div>
@@ -103,8 +154,10 @@ const MyTeam = () => {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-500">Total Points</p>
-                <p className="text-xl font-semibold text-gray-900">127</p>
-                <p className="text-sm text-gray-600">+15 this week</p>
+                <p className="text-xl font-semibold text-gray-900">
+                  {draftPicks.reduce((total, pick) => total + (pick.points || 0), 0)}
+                </p>
+                <p className="text-sm text-gray-600">From your team</p>
               </div>
             </div>
           </div>
@@ -119,21 +172,23 @@ const MyTeam = () => {
             </div>
             <div className="p-6">
               <div className="space-y-4">
-                <div className="flex items-center justify-between p-4 bg-orange-50 rounded-lg border-l-4 border-survivor-orange">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-survivor-orange rounded-full flex items-center justify-center">
-                      <Crown className="h-5 w-5 text-white" />
+                {soleSurvivorPick && (
+                  <div className="flex items-center justify-between p-4 bg-orange-50 rounded-lg border-l-4 border-survivor-orange">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 bg-survivor-orange rounded-full flex items-center justify-center">
+                        <Crown className="h-5 w-5 text-white" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-gray-900">{soleSurvivorPick.name || soleSurvivorPick.contestants?.name}</p>
+                        <p className="text-sm text-gray-500">Sole Survivor Pick</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-medium text-gray-900">Alex Moore</p>
-                      <p className="text-sm text-gray-500">Sole Survivor Pick</p>
+                    <div className="text-right">
+                      <p className="text-sm font-medium text-gray-900">{soleSurvivorPick.points || 0} pts</p>
+                      <p className="text-xs text-gray-500">Episodes: {soleSurvivorPick.episodes || 0}</p>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-sm font-medium text-gray-900">25 pts</p>
-                    <p className="text-xs text-gray-500">Episodes: 5</p>
-                  </div>
-                </div>
+                )}
 
                 {draftPicks.map((pick, index) => {
                   const originalRank = getOriginalRank(pick.id);
@@ -141,15 +196,16 @@ const MyTeam = () => {
                     <div key={pick.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                       <div className="flex items-center space-x-3">
                         <img
-                          src={`/contestant-images/${pick.image}`}
-                          alt={pick.name}
+                          src={(pick.image_url || pick.contestants?.image_url) || `/contestant-images/${pick.image || pick.contestants?.image}`}
+                          alt={pick.name || pick.contestants?.name}
                           className="w-10 h-10 object-cover object-top rounded-full"
                           onError={(e) => {
-                            e.target.src = `https://via.placeholder.com/40x40/cccccc/666666?text=${pick.name.split(' ').map(n => n[0]).join('')}`;
+                            const name = pick.name || pick.contestants?.name || 'Unknown';
+                            e.target.src = `https://via.placeholder.com/40x40/cccccc/666666?text=${name.split(' ').map(n => n[0]).join('')}`;
                           }}
                         />
                         <div>
-                          <p className="font-medium text-gray-900">{pick.name}</p>
+                          <p className="font-medium text-gray-900">{pick.name || pick.contestants?.name}</p>
                           <div className="flex items-center space-x-2">
                             <p className="text-sm text-gray-500">Draft Pick #{pick.pickNumber}</p>
                             {originalRank && (
@@ -164,8 +220,8 @@ const MyTeam = () => {
                         </div>
                       </div>
                       <div className="flex items-center space-x-2">
-                        <div className={`px-2 py-1 rounded-full text-white text-xs font-medium ${getTribeColor(pick.tribe)}`}>
-                          {pick.tribe}
+                        <div className={`px-2 py-1 rounded-full text-white text-xs font-medium ${getTribeColor(pick.tribe || pick.contestants?.tribe)}`}>
+                          {pick.tribe || pick.contestants?.tribe}
                         </div>
                         <div className="text-right">
                           <p className="text-sm font-medium text-gray-900">{pick.points} pts</p>
@@ -193,15 +249,16 @@ const MyTeam = () => {
                     }`}>
                       <div className="flex items-center space-x-3">
                         <img
-                          src={`/contestant-images/${pick.image}`}
-                          alt={pick.name}
+                          src={(pick.image_url || pick.contestants?.image_url) || `/contestant-images/${pick.image || pick.contestants?.image}`}
+                          alt={pick.name || pick.contestants?.name}
                           className="w-8 h-8 object-cover object-top rounded-full"
                           onError={(e) => {
-                            e.target.src = `https://via.placeholder.com/32x32/cccccc/666666?text=${pick.name.split(' ').map(n => n[0]).join('')}`;
+                            const name = pick.name || pick.contestants?.name || 'Unknown';
+                            e.target.src = `https://via.placeholder.com/32x32/cccccc/666666?text=${name.split(' ').map(n => n[0]).join('')}`;
                           }}
                         />
                         <div>
-                          <p className="font-medium text-gray-900">{pick.name}</p>
+                          <p className="font-medium text-gray-900">{pick.name || pick.contestants?.name}</p>
                           <div className="flex items-center space-x-2">
                             <p className="text-sm text-gray-500">
                               {index === 0 ? 'Next replacement' : `Replacement #${index + 1}`}
@@ -213,8 +270,8 @@ const MyTeam = () => {
                           </div>
                         </div>
                       </div>
-                      <div className={`px-2 py-1 rounded-full text-white text-xs font-medium ${getTribeColor(pick.tribe)}`}>
-                        {pick.tribe}
+                      <div className={`px-2 py-1 rounded-full text-white text-xs font-medium ${getTribeColor(pick.tribe || pick.contestants?.tribe)}`}>
+                        {pick.tribe || pick.contestants?.tribe}
                       </div>
                     </div>
                   ))}

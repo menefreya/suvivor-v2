@@ -1,10 +1,37 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Calendar, Play, Clock, Award, Users, Shield, Eye, Plus, Minus, Crown } from 'lucide-react';
-import { contestants } from '../../data/contestants';
+import { supabase } from '../../lib/supabase';
 
 const Episodes = () => {
   const [selectedEpisode, setSelectedEpisode] = useState(5);
   const [viewMode, setViewMode] = useState('scoring'); // 'overview' or 'scoring'
+  const [contestants, setContestants] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Fetch contestants from Supabase
+  useEffect(() => {
+    const fetchContestants = async () => {
+      try {
+        setLoading(true);
+        const { data, error } = await supabase
+          .from('contestants')
+          .select('*')
+          .eq('season_id', 1)
+          .order('name');
+        
+        if (error) throw error;
+        setContestants(data || []);
+      } catch (error) {
+        console.error('Error fetching contestants:', error);
+        setError(error.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchContestants();
+  }, []);
 
   // Mock scoring data - in real app this would come from API
   const mockScoring = {
@@ -154,6 +181,37 @@ const Episodes = () => {
     }
   };
 
+  // Loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-survivor-orange mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading episodes...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-red-500 text-xl mb-4">⚠️</div>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Error loading episodes</h3>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="bg-survivor-orange text-white px-4 py-2 rounded-md hover:bg-orange-600"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -297,16 +355,17 @@ const Episodes = () => {
                             <div className="flex items-center gap-3">
                               <div className={`w-3 h-3 rounded-full ${getTribeColor(contestant.tribe)}`}></div>
                               <img
-                                src={`/contestant-images/${contestant.image}`}
+                                src={contestant.image_url || `/contestant-images/${contestant.image}`}
                                 alt={contestant.name}
                                 className="w-8 h-8 object-cover object-top rounded-full"
                                 onError={(e) => {
-                                  e.target.src = `https://via.placeholder.com/32x32/cccccc/666666?text=${contestant.name.split(' ').map(n => n[0]).join('')}`;
+                                  const name = contestant.name || 'Unknown';
+                                  e.target.src = `https://via.placeholder.com/32x32/cccccc/666666?text=${name.split(' ').map(n => n[0]).join('')}`;
                                 }}
                               />
                               <div>
                                 <span className="font-medium text-sm text-gray-900">{contestant.name}</span>
-                                {contestant.eliminated && (
+                                {contestant.is_eliminated && (
                                   <span className="ml-2 text-xs bg-red-100 text-red-800 px-2 py-1 rounded">Eliminated</span>
                                 )}
                               </div>
@@ -373,7 +432,7 @@ const Episodes = () => {
                     const total = calculateEpisodeTotal(contestant.id);
                     return (
                       <div key={contestant.id} className="text-center">
-                        <p className="font-medium text-gray-900">{contestant.name.split(' ')[0]}</p>
+                        <p className="font-medium text-gray-900">{(contestant.name || 'Unknown').split(' ')[0]}</p>
                         <p className={`font-bold ${
                           total > 0 ? 'text-green-700' : 
                           total < 0 ? 'text-red-700' : 'text-gray-700'

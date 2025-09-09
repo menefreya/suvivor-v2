@@ -42,8 +42,8 @@ const Draft = () => {
     console.log(`Moving from position ${sourceIndex} to ${destinationIndex}`);
 
     // Get sorted rankings
-    const sortedRankings = [...draftRankings].sort((a, b) => a.rank - b.rank);
-    console.log('Current rankings:', sortedRankings.map(c => `${c.name} (${c.rank})`));
+    const sortedRankings = [...draftRankings].sort((a, b) => a.rank_position - b.rank_position);
+    console.log('Current rankings:', sortedRankings.map(c => `${c.name || c.contestants?.name} (${c.rank_position})`));
     
     // Reorder the array
     const [reorderedItem] = sortedRankings.splice(sourceIndex, 1);
@@ -52,10 +52,10 @@ const Draft = () => {
     // Update ranks for all contestants
     const updatedRankings = sortedRankings.map((contestant, index) => ({
       ...contestant,
-      rank: index + 1
+      rank_position: index + 1
     }));
 
-    console.log('Updated rankings:', updatedRankings.map(c => `${c.name} (${c.rank})`));
+    console.log('Updated rankings:', updatedRankings.map(c => `${c.name || c.contestants?.name} (${c.rank_position})`));
 
     // Update the entire rankings array at once
     updateRankings(updatedRankings);
@@ -103,12 +103,12 @@ const Draft = () => {
                         <span className="text-white font-bold">{index + 1}</span>
                       </div>
                       <div>
-                        <p className="font-medium text-gray-900">{pick.name}</p>
+                        <p className="font-medium text-gray-900">{pick.name || pick.contestants?.name}</p>
                         <p className="text-sm text-gray-500">Rank #{pick.rank} in your rankings</p>
                       </div>
                     </div>
-                    <div className={`px-3 py-1 rounded-full text-white text-sm font-medium ${getTribeColor(pick.tribe)}`}>
-                      {pick.tribe}
+                    <div className={`px-3 py-1 rounded-full text-white text-sm font-medium ${getTribeColor(pick.tribe || pick.contestants?.tribe)}`}>
+                      {pick.tribe || pick.contestants?.tribe}
                     </div>
                   </div>
                 ))}
@@ -122,44 +122,51 @@ const Draft = () => {
               
               <div className="space-y-4">
                 {draftRankings
-                  .sort((a, b) => a.rank - b.rank)
+                  .sort((a, b) => a.rank_position - b.rank_position)
                   .map((contestant, index) => {
                     const isCurrentPick = draftPicks.some(pick => pick.id === contestant.id);
                     return (
                       <div key={contestant.id} className={`flex items-center space-x-3 p-3 rounded-lg ${
                         isCurrentPick ? 'bg-green-50 border border-green-200' : 
-                        contestant.eliminated ? 'bg-red-50 border border-red-200' : 
+                        contestant.is_eliminated || contestant.contestants?.is_eliminated ? 'bg-red-50 border border-red-200' : 
                         'bg-gray-50 border border-gray-200'
                       }`}>
                         <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold ${
                           isCurrentPick ? 'bg-green-600' : 
-                          contestant.eliminated ? 'bg-red-500' : 
+                          contestant.is_eliminated || contestant.contestants?.is_eliminated ? 'bg-red-500' : 
                           'bg-survivor-orange'
                         }`}>
-                          {contestant.rank}
+                          {contestant.rank_position || contestant.rank}
                         </div>
                         
                         <img
-                          src={`/contestant-images/${contestant.image}`}
-                          alt={contestant.name}
+                          src={(contestant.image_url || contestant.contestants?.image_url) || `/contestant-images/${contestant.image || contestant.contestants?.image}`}
+                          alt={contestant.name || contestant.contestants?.name}
                           className="w-10 h-10 object-cover object-top rounded-full"
                           onError={(e) => {
-                            e.target.src = `https://via.placeholder.com/40x40/cccccc/666666?text=${contestant.name.split(' ').map(n => n[0]).join('')}`;
+                            const name = contestant.name || contestant.contestants?.name || 'Unknown';
+                            const initials = name.split(' ').map(n => n[0]).join('');
+                            e.target.src = `data:image/svg+xml;base64,${btoa(`
+                              <svg width="40" height="40" xmlns="http://www.w3.org/2000/svg">
+                                <rect width="40" height="40" fill="#cccccc"/>
+                                <text x="20" y="25" text-anchor="middle" fill="#666666" font-family="Arial" font-size="14" font-weight="bold">${initials}</text>
+                              </svg>
+                            `)}`;
                           }}
                         />
                         
                         <div className="flex-1 min-w-0">
-                          <p className="font-medium text-gray-900 truncate">{contestant.name}</p>
+                          <p className="font-medium text-gray-900 truncate">{contestant.name || contestant.contestants?.name}</p>
                           <div className="flex items-center space-x-2">
-                            <div className={`px-2 py-1 rounded text-white text-xs font-medium ${getTribeColor(contestant.tribe)}`}>
-                              {contestant.tribe}
+                            <div className={`px-2 py-1 rounded text-white text-xs font-medium ${getTribeColor(contestant.tribe || contestant.contestants?.tribe)}`}>
+                              {contestant.tribe || contestant.contestants?.tribe}
                             </div>
                             {isCurrentPick && (
                               <div className="px-2 py-1 bg-green-600 text-white text-xs font-medium rounded">
                                 Current Pick
                               </div>
                             )}
-                            {contestant.eliminated && (
+                            {contestant.is_eliminated || contestant.contestants?.is_eliminated && (
                               <div className="px-2 py-1 bg-red-500 text-white text-xs font-medium rounded">
                                 Eliminated
                               </div>
@@ -237,12 +244,12 @@ const Draft = () => {
                           <span className="text-white font-bold">{index + 1}</span>
                         </div>
                         <div>
-                          <p className="font-medium text-gray-900">{pick.name}</p>
+                          <p className="font-medium text-gray-900">{pick.name || pick.contestants?.name}</p>
                           <p className="text-sm text-gray-500">Rank #{pick.rank} in your rankings</p>
                         </div>
                       </div>
-                      <div className={`px-3 py-1 rounded-full text-white text-sm font-medium ${getTribeColor(pick.tribe)}`}>
-                        {pick.tribe}
+                      <div className={`px-3 py-1 rounded-full text-white text-sm font-medium ${getTribeColor(pick.tribe || pick.contestants?.tribe)}`}>
+                        {pick.tribe || pick.contestants?.tribe}
                       </div>
                     </div>
                   ))}
@@ -258,44 +265,51 @@ const Draft = () => {
                 
                 <div className="space-y-4">
                   {draftRankings
-                    .sort((a, b) => a.rank - b.rank)
+                    .sort((a, b) => a.rank_position - b.rank_position)
                     .map((contestant, index) => {
                       const isCurrentPick = draftPicks.some(pick => pick.id === contestant.id);
                       return (
                         <div key={contestant.id} className={`flex items-center space-x-3 p-3 rounded-lg ${
                           isCurrentPick ? 'bg-green-50 border border-green-200' : 
-                          contestant.eliminated ? 'bg-red-50 border border-red-200' : 
+                          contestant.is_eliminated || contestant.contestants?.is_eliminated ? 'bg-red-50 border border-red-200' : 
                           'bg-gray-50 border border-gray-200'
                         }`}>
                           <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold ${
                             isCurrentPick ? 'bg-green-600' : 
-                            contestant.eliminated ? 'bg-red-500' : 
+                            contestant.is_eliminated || contestant.contestants?.is_eliminated ? 'bg-red-500' : 
                             'bg-survivor-orange'
                           }`}>
-                            {contestant.rank}
+                            {contestant.rank_position || contestant.rank}
                           </div>
                           
                           <img
-                            src={`/contestant-images/${contestant.image}`}
-                            alt={contestant.name}
+                            src={(contestant.image_url || contestant.contestants?.image_url) || `/contestant-images/${contestant.image || contestant.contestants?.image}`}
+                            alt={contestant.name || contestant.contestants?.name}
                             className="w-10 h-10 object-cover object-top rounded-full"
                             onError={(e) => {
-                              e.target.src = `https://via.placeholder.com/40x40/cccccc/666666?text=${contestant.name.split(' ').map(n => n[0]).join('')}`;
+                              const name = contestant.name || contestant.contestants?.name || 'Unknown';
+                              const initials = name.split(' ').map(n => n[0]).join('');
+                              e.target.src = `data:image/svg+xml;base64,${btoa(`
+                                <svg width="40" height="40" xmlns="http://www.w3.org/2000/svg">
+                                  <rect width="40" height="40" fill="#cccccc"/>
+                                  <text x="20" y="25" text-anchor="middle" fill="#666666" font-family="Arial" font-size="14" font-weight="bold">${initials}</text>
+                                </svg>
+                              `)}`;
                             }}
                           />
                           
                           <div className="flex-1 min-w-0">
-                            <p className="font-medium text-gray-900 truncate">{contestant.name}</p>
+                            <p className="font-medium text-gray-900 truncate">{contestant.name || contestant.contestants?.name}</p>
                             <div className="flex items-center space-x-2">
-                              <div className={`px-2 py-1 rounded text-white text-xs font-medium ${getTribeColor(contestant.tribe)}`}>
-                                {contestant.tribe}
+                              <div className={`px-2 py-1 rounded text-white text-xs font-medium ${getTribeColor(contestant.tribe || contestant.contestants?.tribe)}`}>
+                                {contestant.tribe || contestant.contestants?.tribe}
                               </div>
                               {isCurrentPick && (
                                 <div className="px-2 py-1 bg-green-600 text-white text-xs font-medium rounded">
                                   Current Pick
                                 </div>
                               )}
-                              {contestant.eliminated && (
+                              {contestant.is_eliminated || contestant.contestants?.is_eliminated && (
                                 <div className="px-2 py-1 bg-red-500 text-white text-xs font-medium rounded">
                                   Eliminated
                                 </div>
@@ -431,15 +445,22 @@ const Draft = () => {
                           <span className="text-white font-bold text-xs">{index + 1}</span>
                         </div>
                         <img
-                          src={`/contestant-images/${pick.image}`}
-                          alt={pick.name}
+                          src={(pick.image_url || pick.contestants?.image_url) || `/contestant-images/${pick.image || pick.contestants?.image}`}
+                          alt={pick.name || pick.contestants?.name || pick.contestants?.name}
                           className="w-8 h-8 object-cover object-top rounded-full"
                           onError={(e) => {
-                            e.target.src = `https://via.placeholder.com/32x32/cccccc/666666?text=${pick.name.split(' ').map(n => n[0]).join('')}`;
+                            const name = pick.name || pick.contestants?.name || pick.contestants?.name || 'Unknown';
+                            const initials = name.split(' ').map(n => n[0]).join('');
+                            e.target.src = `data:image/svg+xml;base64,${btoa(`
+                              <svg width="32" height="32" xmlns="http://www.w3.org/2000/svg">
+                                <rect width="32" height="32" fill="#cccccc"/>
+                                <text x="16" y="20" text-anchor="middle" fill="#666666" font-family="Arial" font-size="12" font-weight="bold">${initials}</text>
+                              </svg>
+                            `)}`;
                           }}
                         />
                         <div>
-                          <p className="text-sm font-medium text-gray-900">{pick.name}</p>
+                          <p className="text-sm font-medium text-gray-900">{pick.name || pick.contestants?.name || pick.contestants?.name}</p>
                           <p className="text-xs text-gray-500">Your rank #{pick.rank}</p>
                         </div>
                       </div>
@@ -501,7 +522,7 @@ const Draft = () => {
                       className={`p-6 ${snapshot.isDraggingOver ? 'bg-gray-50' : ''}`}
                     >
                         {draftRankings
-                          .sort((a, b) => a.rank - b.rank)
+                          .sort((a, b) => a.rank_position - b.rank_position)
                           .map((contestant, index) => {
                             const isCurrentPick = draftPicks.some(pick => pick.id === contestant.id);
                             return (
@@ -529,21 +550,28 @@ const Draft = () => {
                                     <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
                                       isCurrentPick ? 'bg-green-600' : 'bg-survivor-orange'
                                     }`}>
-                                      <span className="text-white font-bold text-sm">{contestant.rank}</span>
+                                      <span className="text-white font-bold text-sm">{contestant.rank_position || contestant.rank}</span>
                                     </div>
                                     
                                     <img
-                                      src={`/contestant-images/${contestant.image}`}
-                                      alt={contestant.name}
+                                      src={(contestant.image_url || contestant.contestants?.image_url) || `/contestant-images/${contestant.image || contestant.contestants?.image}`}
+                                      alt={contestant.name || contestant.contestants?.name}
                                       className="w-12 h-12 object-cover object-top rounded-full"
                                       onError={(e) => {
-                                        e.target.src = `https://via.placeholder.com/48x48/cccccc/666666?text=${contestant.name.split(' ').map(n => n[0]).join('')}`;
+                                        const name = contestant.name || contestant.contestants?.name || 'Unknown';
+                                        const initials = name.split(' ').map(n => n[0]).join('');
+                                        e.target.src = `data:image/svg+xml;base64,${btoa(`
+                                          <svg width="48" height="48" xmlns="http://www.w3.org/2000/svg">
+                                            <rect width="48" height="48" fill="#cccccc"/>
+                                            <text x="24" y="30" text-anchor="middle" fill="#666666" font-family="Arial" font-size="16" font-weight="bold">${initials}</text>
+                                          </svg>
+                                        `)}`;
                                       }}
                                     />
                                     
                                     <div>
-                                      <p className="font-medium text-gray-900">{contestant.name}</p>
-                                      <p className="text-sm text-gray-600">{contestant.occupation}</p>
+                                      <p className="font-medium text-gray-900">{contestant.name || contestant.contestants?.name}</p>
+                                      <p className="text-sm text-gray-600">{contestant.occupation || contestant.contestants?.occupation}</p>
                                     </div>
                                   </div>
                                   
@@ -553,11 +581,11 @@ const Draft = () => {
                                         Current Pick
                                       </div>
                                     )}
-                                    <div className={`px-3 py-1 rounded-full text-white text-sm font-medium ${getTribeColor(contestant.tribe)}`}>
-                                      {contestant.tribe}
+                                    <div className={`px-3 py-1 rounded-full text-white text-sm font-medium ${getTribeColor(contestant.tribe || contestant.contestants?.tribe)}`}>
+                                      {contestant.tribe || contestant.contestants?.tribe}
                                     </div>
                                     
-                                    {contestant.eliminated && (
+                                    {(contestant.is_eliminated || contestant.contestants?.is_eliminated) && (
                                       <div className="px-3 py-1 bg-red-100 text-red-800 text-sm font-medium rounded-full">
                                         Eliminated
                                       </div>
@@ -599,14 +627,14 @@ const Draft = () => {
                   <h4 className="font-medium text-gray-900 mb-2">Your top picks will be:</h4>
                   <div className="space-y-2">
                     {draftRankings
-                      .sort((a, b) => a.rank - b.rank)
+                      .sort((a, b) => a.rank_position - b.rank_position)
                       .slice(0, 2)
                       .map((contestant, index) => (
                         <div key={contestant.id} className="flex items-center space-x-2">
                           <span className="w-6 h-6 bg-survivor-orange rounded-full flex items-center justify-center">
                             <span className="text-white text-xs font-bold">{index + 1}</span>
                           </span>
-                          <span className="text-sm font-medium text-gray-900">{contestant.name}</span>
+                          <span className="text-sm font-medium text-gray-900">{contestant.name || contestant.contestants?.name}</span>
                         </div>
                       ))}
                   </div>

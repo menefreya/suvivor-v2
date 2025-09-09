@@ -34,7 +34,7 @@ const Dashboard = () => {
       weeklyPoints: 8,
       rank: 2,
       previousRank: 1,
-      draftPicks: isDraftSubmitted ? draftPicks.map(p => p.name) : ['Not Set'],
+      draftPicks: isDraftSubmitted ? draftPicks.map(p => p.name || p.contestants?.name) : ['Not Set'],
       soleSurvivor: isSoleSurvivorSubmitted ? soleSurvivorPick?.name : 'Not Set',
       isCurrentUser: true
     },
@@ -276,16 +276,17 @@ const Dashboard = () => {
                     <div className="flex items-center justify-between p-4 bg-gradient-to-r from-yellow-50 to-orange-50 rounded-lg border border-yellow-200">
                       <div className="flex items-center space-x-3">
                         <img
-                          src={`/contestant-images/${soleSurvivorPick.image}`}
-                          alt={soleSurvivorPick.name}
+                          src={soleSurvivorPick.image_url || `/contestant-images/${soleSurvivorPick.image}`}
+                          alt={soleSurvivorPick.name || soleSurvivorPick.contestants?.name}
                           className="w-12 h-12 object-cover object-top rounded-full"
                           onError={(e) => {
-                            e.target.src = `https://via.placeholder.com/48x48/cccccc/666666?text=${soleSurvivorPick.name.split(' ').map(n => n[0]).join('')}`;
+                            const name = soleSurvivorPick.name || soleSurvivorPick.contestants?.name || 'Unknown';
+                            e.target.src = `https://via.placeholder.com/48x48/cccccc/666666?text=${name.split(' ').map(n => n[0]).join('')}`;
                           }}
                         />
                         <div>
-                          <p className="font-medium text-gray-900">{soleSurvivorPick.name}</p>
-                          <p className="text-sm text-gray-600">{soleSurvivorPick.occupation}</p>
+                          <p className="font-medium text-gray-900">{soleSurvivorPick.name || soleSurvivorPick.contestants?.name}</p>
+                          <p className="text-sm text-gray-600">{soleSurvivorPick.occupation || soleSurvivorPick.contestants?.occupation}</p>
                         </div>
                       </div>
                       <div className="text-right">
@@ -326,16 +327,17 @@ const Dashboard = () => {
                             <span className="text-white font-bold text-sm">{index + 1}</span>
                           </div>
                           <img
-                            src={`/contestant-images/${pick.image}`}
-                            alt={pick.name}
+                            src={(pick.image_url || pick.contestants?.image_url) || `/contestant-images/${pick.image || pick.contestants?.image}`}
+                            alt={pick.name || pick.contestants?.name}
                             className="w-10 h-10 object-cover object-top rounded-full"
                             onError={(e) => {
-                              e.target.src = `https://via.placeholder.com/40x40/cccccc/666666?text=${pick.name.split(' ').map(n => n[0]).join('')}`;
+                              const name = pick.name || pick.contestants?.name || 'Unknown';
+                              e.target.src = `https://via.placeholder.com/40x40/cccccc/666666?text=${name.split(' ').map(n => n[0]).join('')}`;
                             }}
                           />
                           <div>
-                            <p className="font-medium text-gray-900">{pick.name}</p>
-                            <p className="text-sm text-gray-600">{pick.occupation}</p>
+                            <p className="font-medium text-gray-900">{pick.name || pick.contestants?.name}</p>
+                            <p className="text-sm text-gray-600">{pick.occupation || pick.contestants?.occupation}</p>
                           </div>
                         </div>
                         <div className="text-right">
@@ -343,7 +345,7 @@ const Dashboard = () => {
                             {index === 0 ? '42 pts' : '38 pts'}
                           </p>
                           <p className="text-xs text-gray-500">
-                            {pick.eliminated ? 'Eliminated' : 'Active'}
+                            {(pick.is_eliminated || pick.contestants?.is_eliminated) ? 'Eliminated' : 'Active'}
                           </p>
                         </div>
                       </div>

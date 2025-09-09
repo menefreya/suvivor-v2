@@ -1,17 +1,48 @@
-import React, { useState } from 'react';
-import { Search, Filter, Users, Trophy, MapPin, Briefcase, Calendar, Crown, Check } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Search, Filter, Users, Trophy, MapPin, Briefcase, Calendar, Crown } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { contestants, getContestantsByTribe, getActiveContestants, getEliminatedContestants } from '../../data/contestants';
+import { supabase } from '../../lib/supabase';
 import { useSoleSurvivor } from '../../contexts/SoleSurvivorContext';
 
 const Contestants = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTribe, setSelectedTribe] = useState('All');
   const [showEliminated, setShowEliminated] = useState(false);
+  const [contestants, setContestants] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   
   const location = useLocation();
   const navigate = useNavigate();
   const { soleSurvivorPick, changeSoleSurvivor, isSoleSurvivorOpen } = useSoleSurvivor();
+  
+  // Fetch contestants from Supabase
+  useEffect(() => {
+    const fetchContestants = async () => {
+      try {
+        setLoading(true);
+        const { data, error } = await supabase
+          .from('contestants')
+          .select('*')
+          .eq('season_id', 1)
+          .order('name');
+        
+        if (error) throw error;
+        setContestants(data || []);
+      } catch (error) {
+        console.error('Error fetching contestants:', error);
+        setError(error.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchContestants();
+  }, []);
+  
+  // Helper functions for active/eliminated counts
+  const getActiveContestants = () => contestants.filter(c => !c.is_eliminated);
+  const getEliminatedContestants = () => contestants.filter(c => c.is_eliminated);
   
   // Check if we're in sole survivor selection mode
   const searchParams = new URLSearchParams(location.search);
@@ -19,7 +50,7 @@ const Contestants = () => {
   
   // Handle sole survivor selection
   const handleSoleSurvivorSelect = (contestant) => {
-    if (!isSoleSurvivorOpen || contestant.eliminated) return;
+    if (!isSoleSurvivorOpen || contestant.is_eliminated) return;
     
     changeSoleSurvivor(contestant.id);
     // Navigate back to dashboard after selection
@@ -34,7 +65,7 @@ const Contestants = () => {
                          contestant.hometown.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesTribe = selectedTribe === 'All' || contestant.tribe === selectedTribe;
-    const matchesEliminated = showEliminated ? contestant.eliminated : !contestant.eliminated;
+    const matchesEliminated = showEliminated ? contestant.is_eliminated : !contestant.is_eliminated;
     
     return matchesSearch && matchesTribe && matchesEliminated;
   });
@@ -54,6 +85,37 @@ const Contestants = () => {
     if (points > 0) return 'text-yellow-600';
     return 'text-red-600';
   };
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-survivor-orange mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading contestants...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-red-500 text-xl mb-4">⚠️</div>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Error loading contestants</h3>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="bg-survivor-orange text-white px-4 py-2 rounded-md hover:bg-orange-600"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -147,15 +209,15 @@ const Contestants = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {filteredContestants.map(contestant => {
             const isCurrentPick = isSoleSurvivorMode && soleSurvivorPick?.id === contestant.id;
-            const isSelectable = isSoleSurvivorMode && !contestant.eliminated && isSoleSurvivorOpen;
-            const isDisabled = isSoleSurvivorMode && (contestant.eliminated || !isSoleSurvivorOpen);
+            const isSelectable = isSoleSurvivorMode && !contestant.is_eliminated && isSoleSurvivorOpen;
+            const isDisabled = isSoleSurvivorMode && (contestant.is_eliminated || !isSoleSurvivorOpen);
             
             return (
               <div
                 key={contestant.id}
                 onClick={() => isSoleSurvivorMode && isSelectable ? handleSoleSurvivorSelect(contestant) : undefined}
                 className={`bg-white rounded-lg shadow transition-all duration-200 relative ${
-                  contestant.eliminated ? 'opacity-75' : ''
+                  contestant.is_eliminated ? 'opacity-75' : ''
                 } ${
                   isSoleSurvivorMode ? (
                     isSelectable ? 'hover:shadow-lg cursor-pointer hover:scale-105' :
@@ -168,12 +230,13 @@ const Contestants = () => {
               {/* Contestant Image */}
               <div className="relative">
                 <img
-                  src={`/contestant-images/${contestant.image}`}
+                  src={contestant.image_url || `/contestant-images/${contestant.image}`}
                   alt={contestant.name}
                   className="w-full h-64 object-cover object-top rounded-t-lg"
                   style={{ objectPosition: 'center top' }}
                   onError={(e) => {
-                    e.target.src = `https://via.placeholder.com/300x300/cccccc/666666?text=${contestant.name.split(' ').map(n => n[0]).join('')}`;
+                    const name = contestant.name || 'Unknown';
+                    e.target.src = `https://via.placeholder.com/300x300/cccccc/666666?text=${name.split(' ').map(n => n[0]).join('')}`;
                   }}
                 />
                 {/* Tribe Badge */}
@@ -186,7 +249,7 @@ const Contestants = () => {
                     <Crown className="h-3 w-3" />
                     <span>Your Pick</span>
                   </div>
-                ) : contestant.eliminated ? (
+                ) : contestant.is_eliminated ? (
                   <div className="absolute top-3 right-3 px-2 py-1 bg-red-500 text-white text-xs font-medium rounded-full">
                     Eliminated
                   </div>

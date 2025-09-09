@@ -54,7 +54,7 @@ const AppRoutes = () => {
     <Routes>
       <Route 
         path="/login" 
-        element={user ? <Navigate to="/dashboard" /> : <Login />} 
+        element={user ? <Navigate to={user.isAdmin ? "/admin" : "/dashboard"} /> : <Login />} 
       />
       <Route 
         path="/dashboard" 
@@ -122,7 +122,7 @@ const AppRoutes = () => {
       />
       <Route 
         path="/" 
-        element={<Navigate to={user ? "/dashboard" : "/login"} />} 
+        element={<Navigate to={user ? (user.isAdmin ? "/admin" : "/dashboard") : "/login"} />} 
       />
     </Routes>
   );

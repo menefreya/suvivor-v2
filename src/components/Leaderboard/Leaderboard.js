@@ -148,7 +148,7 @@ const Leaderboard = () => {
                         <div className="flex-shrink-0 h-8 w-8">
                           <div className="h-8 w-8 rounded-full bg-gray-300 flex items-center justify-center">
                             <span className="text-sm font-medium text-gray-700">
-                              {player.name.split(' ').map(n => n[0]).join('')}
+                              {(player.name || 'Unknown').split(' ').map(n => n[0]).join('')}
                             </span>
                           </div>
                         </div>

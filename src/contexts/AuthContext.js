@@ -48,7 +48,22 @@ export const AuthProvider = ({ children }) => {
         .single();
 
       if (error) throw error;
-      setUser(data);
+      
+      // Map database fields to frontend user object
+      const userProfile = {
+        id: data.id,
+        email: data.email,
+        username: data.username,
+        firstName: data.first_name,
+        lastName: data.last_name,
+        isAdmin: data.is_admin || false, // Map is_admin to isAdmin
+        avatarUrl: data.avatar_url,
+        createdAt: data.created_at,
+        updatedAt: data.updated_at,
+        lastLoginAt: data.last_login_at
+      };
+      
+      setUser(userProfile);
     } catch (error) {
       console.error('Error fetching user profile:', error);
     }

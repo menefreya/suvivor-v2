@@ -82,7 +82,16 @@ export const DraftProvider = ({ children }) => {
     
     setLoading(true);
     try {
-      // Load draft rankings
+      // First, get all contestants from the contestants table
+      const { data: contestants, error: contestantsError } = await supabase
+        .from('contestants')
+        .select('*')
+        .eq('season_id', 1)
+        .order('name');
+
+      if (contestantsError) throw contestantsError;
+
+      // Load existing draft rankings for this user
       const { data: rankings, error: rankingsError } = await supabase
         .from('draft_rankings')
         .select(`
@@ -96,12 +105,13 @@ export const DraftProvider = ({ children }) => {
       if (rankingsError) throw rankingsError;
 
       if (rankings.length > 0) {
+        // User has existing rankings
         setDraftRankings(rankings);
         setIsDraftSubmitted(rankings[0].is_submitted);
         await calculateDraftPicks(rankings);
       } else {
-        // Initialize with default rankings
-        await initializeDefaultRankings();
+        // No existing rankings - create default rankings with all contestants in random order
+        await initializeDefaultRankings(contestants);
       }
 
       // Load draft picks
@@ -117,7 +127,7 @@ export const DraftProvider = ({ children }) => {
         .order('pick_number');
 
       if (picksError) throw picksError;
-      setDraftPicks(picks);
+      setDraftPicks(picks || []);
 
     } catch (error) {
       console.error('Error loading draft data:', error);
@@ -126,15 +136,12 @@ export const DraftProvider = ({ children }) => {
     }
   };
 
-  const initializeDefaultRankings = async () => {
+  const initializeDefaultRankings = async (contestants) => {
     try {
-      // Get all contestants
-      const { data: contestants, error } = await supabase
-        .from('contestants')
-        .select('*')
-        .eq('season_id', 1);
-
-      if (error) throw error;
+      if (!contestants || contestants.length === 0) {
+        console.error('No contestants available to create rankings');
+        return;
+      }
 
       // Create shuffled rankings
       const shuffled = [...contestants].sort(() => Math.random() - 0.5);
@@ -153,6 +160,7 @@ export const DraftProvider = ({ children }) => {
 
       if (insertError) throw insertError;
 
+      // Reload data to get the newly created rankings with contestant data
       await loadDraftData();
     } catch (error) {
       console.error('Error initializing rankings:', error);
@@ -325,8 +333,17 @@ export const DraftProvider = ({ children }) => {
       setDraftPicks([]);
       setIsDraftSubmitted(false);
 
-      // Reinitialize
-      await initializeDefaultRankings();
+      // Get contestants and reinitialize
+      const { data: contestants, error } = await supabase
+        .from('contestants')
+        .select('*')
+        .eq('season_id', 1);
+
+      if (error) throw error;
+      
+      if (contestants && contestants.length > 0) {
+        await initializeDefaultRankings(contestants);
+      }
     } catch (error) {
       console.error('Error resetting draft:', error);
     }
