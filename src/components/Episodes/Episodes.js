@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Calendar, Play, Clock, Award, Users, Shield, Eye, Plus, Minus, Crown } from 'lucide-react';
 import { useContestants } from '../../contexts/ContestantsContext';
+import { generatePlaceholderImage, getInitials } from '../../utils/imageUtils';
 
 const Episodes = () => {
   const [selectedEpisode, setSelectedEpisode] = useState(5);
@@ -335,7 +336,8 @@ const Episodes = () => {
                                 className="w-8 h-8 object-cover object-top rounded-full"
                                 onError={(e) => {
                                   const name = contestant.name || 'Unknown';
-                                  e.target.src = `https://via.placeholder.com/32x32/cccccc/666666?text=${name.split(' ').map(n => n[0]).join('')}`;
+                                  const initials = getInitials(name);
+                                  e.target.src = generatePlaceholderImage(initials, 32);
                                 }}
                               />
                               <div>

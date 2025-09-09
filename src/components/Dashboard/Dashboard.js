@@ -4,82 +4,27 @@ import { Link } from 'react-router-dom';
 import { useDraft } from '../../contexts/DraftContext';
 import { useSoleSurvivor } from '../../contexts/SoleSurvivorContext';
 import { useAuth } from '../../contexts/AuthContext';
+import { generatePlaceholderImage, getInitials } from '../../utils/imageUtils';
 
 const Dashboard = () => {
   const { draftPicks, isDraftSubmitted } = useDraft();
   const { soleSurvivorPick, isSoleSurvivorSubmitted } = useSoleSurvivor();
   const { user } = useAuth();
 
-  // Mock leaderboard data - in a real app this would come from an API
-  const mockLeaderboard = [
-    {
-      id: 1,
-      username: 'SurvivorFan2024',
-      firstName: 'Sarah',
-      lastName: 'Chen',
-      totalPoints: 87,
-      weeklyPoints: 12,
-      rank: 1,
-      previousRank: 2,
-      draftPicks: ['Sophie Segreti', 'Jawan Pitts'],
-      soleSurvivor: 'Sophie Segreti',
-      isCurrentUser: false
-    },
-    {
-      id: 2,
-      username: user?.username || 'player',
-      firstName: user?.firstName || 'You',
-      lastName: user?.lastName || '',
-      totalPoints: 73,
-      weeklyPoints: 8,
-      rank: 2,
-      previousRank: 1,
-      draftPicks: isDraftSubmitted ? draftPicks.map(p => p.name || p.contestants?.name) : ['Not Set'],
-      soleSurvivor: isSoleSurvivorSubmitted ? soleSurvivorPick?.name : 'Not Set',
-      isCurrentUser: true
-    },
-    {
-      id: 3,
-      username: 'OutwitOutplay',
-      firstName: 'Mike',
-      lastName: 'Rodriguez',
-      totalPoints: 69,
-      weeklyPoints: 15,
-      rank: 3,
-      previousRank: 4,
-      draftPicks: ['Alex Moore', 'Kristina Mills'],
-      soleSurvivor: 'Alex Moore',
-      isCurrentUser: false
-    },
-    {
-      id: 4,
-      username: 'TorchSnuffer',
-      firstName: 'Emma',
-      lastName: 'Johnson',
-      totalPoints: 64,
-      weeklyPoints: 6,
-      rank: 4,
-      previousRank: 3,
-      draftPicks: ['Savannah Louie', 'Nicole Mazullo'],
-      soleSurvivor: 'Savannah Louie',
-      isCurrentUser: false
-    },
-    {
-      id: 5,
-      username: 'TribalCouncil',
-      firstName: 'David',
-      lastName: 'Kim',
-      totalPoints: 58,
-      weeklyPoints: 9,
-      rank: 5,
-      previousRank: 5,
-      draftPicks: ['Jake Latimer', 'Shannon Fairweather'],
-      soleSurvivor: 'Jake Latimer',
-      isCurrentUser: false
-    }
-  ];
-
-  const currentUser = mockLeaderboard.find(player => player.isCurrentUser);
+  // Current user data - only showing the authenticated user's information
+  const currentUser = {
+    id: user?.id,
+    username: user?.username || 'player',
+    firstName: user?.firstName || 'You',
+    lastName: user?.lastName || '',
+    totalPoints: draftPicks.reduce((total, pick) => total + (pick.points || 0), 0),
+    weeklyPoints: 0, // This would come from recent episode scoring
+    rank: 1, // This would be calculated from all users
+    previousRank: 1,
+    draftPicks: isDraftSubmitted ? draftPicks.map(p => p.name || p.contestants?.name) : ['Not Set'],
+    soleSurvivor: isSoleSurvivorSubmitted ? soleSurvivorPick?.name : 'Not Set',
+    isCurrentUser: true
+  };
 
   const getRankChange = (currentRank, previousRank) => {
     if (currentRank < previousRank) return 'up';
@@ -122,8 +67,8 @@ const Dashboard = () => {
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-500">Current Rank</p>
                 <div className="flex items-center space-x-2">
-                  <p className="text-2xl font-semibold text-gray-900">#{currentUser?.rank || 'TBD'}</p>
-                  {currentUser && getRankIcon(getRankChange(currentUser.rank, currentUser.previousRank))}
+                  <p className="text-2xl font-semibold text-gray-900">#{currentUser.rank || 'TBD'}</p>
+                  {getRankIcon(getRankChange(currentUser.rank, currentUser.previousRank))}
                 </div>
               </div>
             </div>
@@ -136,7 +81,7 @@ const Dashboard = () => {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-500">Total Points</p>
-                <p className="text-2xl font-semibold text-gray-900">{currentUser?.totalPoints || 0}</p>
+                <p className="text-2xl font-semibold text-gray-900">{currentUser.totalPoints || 0}</p>
               </div>
             </div>
           </div>
@@ -170,78 +115,57 @@ const Dashboard = () => {
 
         {/* Main Dashboard Content */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Leaderboard */}
+          {/* Your Performance */}
           <div className="bg-white rounded-lg shadow">
             <div className="px-6 py-4 border-b border-gray-200">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-medium text-gray-900">League Leaderboard</h3>
+                <h3 className="text-lg font-medium text-gray-900">Your Performance</h3>
                 <Link 
                   to="/leaderboard"
                   className="text-sm text-survivor-orange hover:text-orange-600 font-medium"
                 >
-                  View Full Leaderboard
+                  View Leaderboard
                 </Link>
               </div>
             </div>
             <div className="p-6">
               <div className="space-y-4">
-                {mockLeaderboard.slice(0, 5).map((player, index) => (
-                  <div 
-                    key={player.id} 
-                    className={`flex items-center justify-between p-4 rounded-lg transition-colors ${
-                      player.isCurrentUser 
-                        ? 'bg-survivor-orange bg-opacity-10 border-2 border-survivor-orange border-opacity-30' 
-                        : 'bg-gray-50 hover:bg-gray-100'
-                    }`}
-                  >
-                    <div className="flex items-center space-x-4">
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-white ${
-                        index === 0 ? 'bg-yellow-500' : 
-                        index === 1 ? 'bg-gray-400' : 
-                        index === 2 ? 'bg-amber-600' : 'bg-blue-500'
-                      }`}>
-                        {index === 0 ? (
-                          <Trophy className="h-5 w-5" />
-                        ) : (
-                          <span>{player.rank}</span>
-                        )}
-                      </div>
-                      <div>
-                        <div className="flex items-center space-x-2">
-                          <p className={`font-medium ${player.isCurrentUser ? 'text-survivor-orange' : 'text-gray-900'}`}>
-                            {player.firstName} {player.lastName}
-                          </p>
-                          {player.isCurrentUser && (
-                            <span className="text-xs bg-survivor-orange text-white px-2 py-1 rounded-full">
-                              You
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-sm text-gray-500">@{player.username}</p>
-                      </div>
+                <div className="flex items-center justify-between p-4 rounded-lg bg-survivor-orange bg-opacity-10 border-2 border-survivor-orange border-opacity-30">
+                  <div className="flex items-center space-x-4">
+                    <div className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-white bg-yellow-500">
+                      <Trophy className="h-5 w-5" />
                     </div>
-                    <div className="text-right">
+                    <div>
                       <div className="flex items-center space-x-2">
-                        <p className="text-lg font-semibold text-gray-900">{player.totalPoints}</p>
-                        {getRankIcon(getRankChange(player.rank, player.previousRank))}
+                        <p className="font-medium text-survivor-orange">
+                          {currentUser.firstName} {currentUser.lastName}
+                        </p>
+                        <span className="text-xs bg-survivor-orange text-white px-2 py-1 rounded-full">
+                          You
+                        </span>
                       </div>
-                      <p className="text-sm text-gray-500">+{player.weeklyPoints} this week</p>
+                      <p className="text-sm text-gray-500">@{currentUser.username}</p>
                     </div>
                   </div>
-                ))}
+                  <div className="text-right">
+                    <div className="flex items-center space-x-2">
+                      <p className="text-lg font-semibold text-gray-900">{currentUser.totalPoints}</p>
+                      {getRankIcon(getRankChange(currentUser.rank, currentUser.previousRank))}
+                    </div>
+                    <p className="text-sm text-gray-500">+{currentUser.weeklyPoints} this week</p>
+                  </div>
+                </div>
               </div>
               
               <div className="mt-6 pt-6 border-t border-gray-200">
                 <div className="flex justify-between items-center">
                   <div className="text-sm text-gray-500">
-                    <span>Your Position: </span>
-                    <span className="font-semibold text-gray-900">#{currentUser?.rank || 'TBD'}</span>
+                    <span>Current Rank: </span>
+                    <span className="font-semibold text-gray-900">#{currentUser.rank}</span>
                   </div>
                   <div className="text-sm text-gray-500">
-                    <span>Points Behind Leader: </span>
-                    <span className="font-semibold text-gray-900">
-                      {currentUser ? (mockLeaderboard[0].totalPoints - currentUser.totalPoints) : 'TBD'}
-                    </span>
+                    <span>Total Points: </span>
+                    <span className="font-semibold text-gray-900">{currentUser.totalPoints}</span>
                   </div>
                 </div>
               </div>
@@ -281,7 +205,8 @@ const Dashboard = () => {
                           className="w-12 h-12 object-cover object-top rounded-full"
                           onError={(e) => {
                             const name = soleSurvivorPick.name || soleSurvivorPick.contestants?.name || 'Unknown';
-                            e.target.src = `https://via.placeholder.com/48x48/cccccc/666666?text=${name.split(' ').map(n => n[0]).join('')}`;
+                            const initials = getInitials(name);
+                            e.target.src = generatePlaceholderImage(initials, 48);
                           }}
                         />
                         <div>
@@ -290,8 +215,8 @@ const Dashboard = () => {
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="text-lg font-semibold text-survivor-orange">15 pts</p>
-                        <p className="text-xs text-gray-500">Episodes held: 1</p>
+                        <p className="text-lg font-semibold text-survivor-orange">{soleSurvivorPick.points || 0} pts</p>
+                        <p className="text-xs text-gray-500">Episodes: {soleSurvivorPick.episodes || 0}</p>
                         <p className="text-xs text-survivor-orange font-medium mt-1">Click to change →</p>
                       </div>
                     </div>
@@ -332,7 +257,8 @@ const Dashboard = () => {
                             className="w-10 h-10 object-cover object-top rounded-full"
                             onError={(e) => {
                               const name = pick.name || pick.contestants?.name || 'Unknown';
-                              e.target.src = `https://via.placeholder.com/40x40/cccccc/666666?text=${name.split(' ').map(n => n[0]).join('')}`;
+                              const initials = getInitials(name);
+                              e.target.src = generatePlaceholderImage(initials, 40);
                             }}
                           />
                           <div>
@@ -342,7 +268,7 @@ const Dashboard = () => {
                         </div>
                         <div className="text-right">
                           <p className="text-sm font-semibold text-gray-900">
-                            {index === 0 ? '42 pts' : '38 pts'}
+                            {pick.points || pick.contestants?.points || 0} pts
                           </p>
                           <p className="text-xs text-gray-500">
                             {(pick.is_eliminated || pick.contestants?.is_eliminated) ? 'Eliminated' : 'Active'}
@@ -376,10 +302,10 @@ const Dashboard = () => {
                   </div>
                   <div className="text-right">
                     <p className="text-xl font-bold text-gray-900">
-                      {currentUser?.totalPoints || 0} pts
+                      {currentUser.totalPoints || 0} pts
                     </p>
                     <p className="text-sm text-gray-500">
-                      +{currentUser?.weeklyPoints || 0} this week
+                      +{currentUser.weeklyPoints || 0} this week
                     </p>
                   </div>
                 </div>

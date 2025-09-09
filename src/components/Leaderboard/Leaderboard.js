@@ -2,15 +2,10 @@ import React from 'react';
 import { BarChart3, Trophy, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 
 const Leaderboard = () => {
+  // In a real implementation, this would come from an API call to get all league participants
   const players = [
-    { rank: 1, name: 'Alex Thompson', points: 142, change: '+12', changeType: 'up', isCurrentUser: false },
-    { rank: 2, name: 'Sarah Chen', points: 138, change: '+8', changeType: 'up', isCurrentUser: false },
-    { rank: 3, name: 'Mike Rodriguez', points: 135, change: '+15', changeType: 'up', isCurrentUser: true },
-    { rank: 4, name: 'Emma Johnson', points: 128, change: '+5', changeType: 'up', isCurrentUser: false },
-    { rank: 5, name: 'David Kim', points: 125, change: '-2', changeType: 'down', isCurrentUser: false },
-    { rank: 6, name: 'Lisa Parker', points: 122, change: '+3', changeType: 'up', isCurrentUser: false },
-    { rank: 7, name: 'John Smith', points: 118, change: '0', changeType: 'same', isCurrentUser: false },
-    { rank: 8, name: 'Maria Garcia', points: 115, change: '+7', changeType: 'up', isCurrentUser: false },
+    // This would be populated with actual user data from the database
+    // For now, showing empty state until real leaderboard data is implemented
   ];
 
   const getChangeIcon = (changeType) => {
@@ -52,8 +47,8 @@ const Leaderboard = () => {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-500">League Leader</p>
-                <p className="text-xl font-semibold text-gray-900">Alex Thompson</p>
-                <p className="text-sm text-gray-600">142 points</p>
+                <p className="text-xl font-semibold text-gray-900">TBD</p>
+                <p className="text-sm text-gray-600">No data yet</p>
               </div>
             </div>
           </div>
@@ -65,8 +60,8 @@ const Leaderboard = () => {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-500">Your Rank</p>
-                <p className="text-xl font-semibold text-gray-900">#3</p>
-                <p className="text-sm text-gray-600">135 points</p>
+                <p className="text-xl font-semibold text-gray-900">TBD</p>
+                <p className="text-sm text-gray-600">No data yet</p>
               </div>
             </div>
           </div>
@@ -78,8 +73,8 @@ const Leaderboard = () => {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-500">Points Behind Leader</p>
-                <p className="text-xl font-semibold text-gray-900">7</p>
-                <p className="text-sm text-gray-600">This week: +15</p>
+                <p className="text-xl font-semibold text-gray-900">TBD</p>
+                <p className="text-sm text-gray-600">No data yet</p>
               </div>
             </div>
           </div>
@@ -91,8 +86,8 @@ const Leaderboard = () => {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-500">Total Players</p>
-                <p className="text-xl font-semibold text-gray-900">8</p>
-                <p className="text-sm text-gray-600">Active league</p>
+                <p className="text-xl font-semibold text-gray-900">TBD</p>
+                <p className="text-sm text-gray-600">No data yet</p>
               </div>
             </div>
           </div>
@@ -125,7 +120,7 @@ const Leaderboard = () => {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {players.map((player) => (
+                {players.length > 0 ? players.map((player) => (
                   <tr 
                     key={player.rank} 
                     className={`hover:bg-gray-50 ${player.isCurrentUser ? 'bg-orange-50' : ''}`}
@@ -180,7 +175,13 @@ const Leaderboard = () => {
                       </div>
                     </td>
                   </tr>
-                ))}
+                )) : (
+                  <tr>
+                    <td colSpan="5" className="px-6 py-8 text-center text-gray-500">
+                      No leaderboard data available yet. Complete your draft to start tracking scores.
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>

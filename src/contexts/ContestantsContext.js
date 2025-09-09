@@ -32,7 +32,14 @@ export const ContestantsProvider = ({ children }) => {
       
       const { data, error } = await supabase
         .from('contestants')
-        .select('*')
+        .select(`
+          *,
+          tribes (
+            id,
+            name,
+            color
+          )
+        `)
         .eq('season_id', 1)
         .order('name');
 

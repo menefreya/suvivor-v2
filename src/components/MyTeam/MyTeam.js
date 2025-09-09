@@ -3,6 +3,7 @@ import { Award, Crown, Users, TrendingUp } from 'lucide-react';
 import { useDraft } from '../../contexts/DraftContext';
 import { useSoleSurvivor } from '../../contexts/SoleSurvivorContext';
 import { supabase } from '../../lib/supabase';
+import { generatePlaceholderImage, getInitials } from '../../utils/imageUtils';
 
 const MyTeam = () => {
   const { draftPicks, draftRankings, isDraftSubmitted, getAllReplacementPicks } = useDraft();
@@ -200,7 +201,8 @@ const MyTeam = () => {
                           className="w-10 h-10 object-cover object-top rounded-full"
                           onError={(e) => {
                             const name = pick.name || pick.contestants?.name || 'Unknown';
-                            e.target.src = `https://via.placeholder.com/40x40/cccccc/666666?text=${name.split(' ').map(n => n[0]).join('')}`;
+                            const initials = getInitials(name);
+                            e.target.src = generatePlaceholderImage(initials, 40);
                           }}
                         />
                         <div>
@@ -253,7 +255,8 @@ const MyTeam = () => {
                           className="w-8 h-8 object-cover object-top rounded-full"
                           onError={(e) => {
                             const name = pick.name || pick.contestants?.name || 'Unknown';
-                            e.target.src = `https://via.placeholder.com/32x32/cccccc/666666?text=${name.split(' ').map(n => n[0]).join('')}`;
+                            const initials = getInitials(name);
+                            e.target.src = generatePlaceholderImage(initials, 32);
                           }}
                         />
                         <div>

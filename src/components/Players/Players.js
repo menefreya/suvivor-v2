@@ -2,80 +2,10 @@ import React from 'react';
 import { User, Trophy, Target, Eye } from 'lucide-react';
 
 const Players = () => {
+  // In a real implementation, this would come from an API call to get all league participants
   const players = [
-    {
-      id: 1,
-      name: 'Alex Thompson',
-      rank: 1,
-      points: 142,
-      soleSurvivor: 'Alex Moore',
-      draftPicks: ['Sophie Segreti', 'Jawan Pitts'],
-      eliminated: 0
-    },
-    {
-      id: 2,
-      name: 'Sarah Chen',
-      rank: 2,
-      points: 138,
-      soleSurvivor: 'Sophie Segreti',
-      draftPicks: ['Alex Moore', 'Jeremiah Ing'],
-      eliminated: 0
-    },
-    {
-      id: 3,
-      name: 'Mike Rodriguez',
-      rank: 3,
-      points: 135,
-      soleSurvivor: 'Alex Moore',
-      draftPicks: ['Sophie Segreti', 'Jawan Pitts'],
-      eliminated: 0,
-      isCurrentUser: true
-    },
-    {
-      id: 4,
-      name: 'Emma Johnson',
-      rank: 4,
-      points: 128,
-      soleSurvivor: 'Jawan Pitts',
-      draftPicks: ['Alex Moore', 'Sophie Segreti'],
-      eliminated: 1
-    },
-    {
-      id: 5,
-      name: 'David Kim',
-      rank: 5,
-      points: 125,
-      soleSurvivor: 'Jeremiah Ing',
-      draftPicks: ['Nicole Mazullo', 'Savannah Louie'],
-      eliminated: 0
-    },
-    {
-      id: 6,
-      name: 'Lisa Parker',
-      rank: 6,
-      points: 122,
-      soleSurvivor: 'Sophie Segreti',
-      draftPicks: ['Alex Moore', 'Jawan Pitts'],
-      eliminated: 0
-    },
-    {
-      id: 7,
-      name: 'John Smith',
-      rank: 7,
-      points: 118,
-      soleSurvivor: 'Nicole Mazullo',
-      draftPicks: ['Sophie Segreti', 'Jeremiah Ing'],
-      eliminated: 1
-    },
-    {
-      id: 8,
-      name: 'Maria Garcia',
-      rank: 8,
-      points: 115,
-      soleSurvivor: 'Savannah Louie',
-      draftPicks: ['Alex Moore', 'Nicole Mazullo'],
-      eliminated: 0
-    }
+    // This would be populated with actual user data from the database
+    // For now, showing empty state until real player data is implemented
   ];
 
   return (
@@ -88,7 +18,7 @@ const Players = () => {
 
         {/* Players Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {players.map((player) => (
+          {players.length > 0 ? players.map((player) => (
             <div 
               key={player.id} 
               className={`bg-white rounded-lg shadow hover:shadow-lg transition-shadow duration-200 ${
@@ -167,7 +97,13 @@ const Players = () => {
                 </div>
               </div>
             </div>
-          ))}
+          )) : (
+            <div className="col-span-full bg-white rounded-lg shadow p-8 text-center">
+              <User className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No Players Yet</h3>
+              <p className="text-gray-600">No league participants have been set up yet. Check back later!</p>
+            </div>
+          )}
         </div>
 
         {/* League Stats */}
@@ -175,19 +111,19 @@ const Players = () => {
           <h3 className="text-lg font-medium text-gray-900 mb-4">League Statistics</h3>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             <div className="text-center">
-              <p className="text-2xl font-bold text-gray-900">8</p>
+              <p className="text-2xl font-bold text-gray-900">TBD</p>
               <p className="text-sm text-gray-600">Total Players</p>
             </div>
             <div className="text-center">
-              <p className="text-2xl font-bold text-gray-900">142</p>
+              <p className="text-2xl font-bold text-gray-900">TBD</p>
               <p className="text-sm text-gray-600">Highest Score</p>
             </div>
             <div className="text-center">
-              <p className="text-2xl font-bold text-gray-900">115</p>
+              <p className="text-2xl font-bold text-gray-900">TBD</p>
               <p className="text-sm text-gray-600">Lowest Score</p>
             </div>
             <div className="text-center">
-              <p className="text-2xl font-bold text-gray-900">128.5</p>
+              <p className="text-2xl font-bold text-gray-900">TBD</p>
               <p className="text-sm text-gray-600">Average Score</p>
             </div>
           </div>
@@ -197,10 +133,9 @@ const Players = () => {
         <div className="mt-8 bg-blue-50 rounded-lg p-6">
           <h3 className="text-lg font-medium text-blue-900 mb-2">Strategy Insights</h3>
           <div className="text-sm text-blue-800 space-y-2">
-            <p>• Most popular Sole Survivor pick: Alex Moore (3 players)</p>
-            <p>• Most popular draft picks: Sophie Segreti, Alex Moore, Jawan Pitts</p>
-            <p>• Players with eliminated contestants: Emma Johnson, John Smith</p>
-            <p>• Click on any player to see their detailed team composition and scoring history</p>
+            <p>• Strategy insights will be available once players start completing their drafts</p>
+            <p>• Popular picks and trends will be displayed here after league begins</p>
+            <p>• Player performance statistics will be tracked throughout the season</p>
           </div>
         </div>
       </div>

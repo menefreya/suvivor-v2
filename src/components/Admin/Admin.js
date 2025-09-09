@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Save, 
   Users, 
@@ -20,6 +20,8 @@ import {
   Target
 } from 'lucide-react';
 import { useContestants } from '../../contexts/ContestantsContext';
+import { generatePlaceholderImage, getInitials } from '../../utils/imageUtils';
+import { supabase } from '../../lib/supabase';
 
 // Contestant Display Component
 const ContestantDisplay = ({ contestant }) => {
@@ -31,7 +33,7 @@ const ContestantDisplay = ({ contestant }) => {
       <div className="space-y-2">
         <div className="flex items-center gap-2">
           <span className="text-sm text-gray-500">Tribe:</span>
-          <span className="text-sm font-medium">{contestant.tribe}</span>
+          <span className="text-sm font-medium">{contestant.tribes?.name || 'No tribe'}</span>
         </div>
         
         <div className="flex items-center gap-2">
@@ -65,13 +67,38 @@ const EditContestantForm = ({ contestant, onSave, onCancel }) => {
   const [formData, setFormData] = useState({
     name: contestant.name || '',
     occupation: contestant.occupation || '',
-    tribe: contestant.tribe || '',
+    current_tribe_id: contestant.current_tribe_id || null,
     age: contestant.age || '',
     hometown: contestant.hometown || '',
     image_url: contestant.image_url || ''
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [tribes, setTribes] = useState([]);
+  const [loadingTribes, setLoadingTribes] = useState(true);
+
+  // Load tribes on component mount
+  useEffect(() => {
+    const fetchTribes = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('tribes')
+          .select('*')
+          .eq('season_id', 1)
+          .eq('is_active', true)
+          .order('name');
+        
+        if (error) throw error;
+        setTribes(data || []);
+      } catch (error) {
+        console.error('Error fetching tribes:', error);
+      } finally {
+        setLoadingTribes(false);
+      }
+    };
+
+    fetchTribes();
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -121,13 +148,17 @@ const EditContestantForm = ({ contestant, onSave, onCancel }) => {
       <div>
         <label className="block text-xs text-gray-500 mb-1">Tribe</label>
         <select
-          value={formData.tribe}
-          onChange={(e) => handleChange('tribe', e.target.value)}
+          value={formData.current_tribe_id || ''}
+          onChange={(e) => handleChange('current_tribe_id', e.target.value === '' ? null : parseInt(e.target.value))}
           className="w-full text-sm border rounded px-2 py-1"
+          disabled={loadingTribes}
         >
-          <option value="Ratu">Ratu</option>
-          <option value="Tika">Tika</option>
-          <option value="Soka">Soka</option>
+          <option value="">No tribe</option>
+          {tribes.map(tribe => (
+            <option key={tribe.id} value={tribe.id}>
+              {tribe.name}
+            </option>
+          ))}
         </select>
       </div>
       
@@ -171,7 +202,7 @@ const EditContestantForm = ({ contestant, onSave, onCancel }) => {
               alt="Preview"
               className="w-16 h-16 object-cover object-top rounded-full border"
               onError={(e) => {
-                e.target.src = `https://via.placeholder.com/64x64/cccccc/666666?text=Error`;
+                e.target.src = generatePlaceholderImage('ER', 64);
               }}
             />
           </div>
@@ -210,7 +241,8 @@ const AdminDashboard = () => {
   const [editingContestant, setEditingContestant] = useState(null);
   const [successMessage, setSuccessMessage] = useState('');
   const { contestants: contestantsData, loading, error, updateContestant, fetchContestants } = useContestants();
-  const [teams, setTeams] = useState(['Ratu', 'Tika', 'Soka']);
+  const [tribes, setTribes] = useState([]);
+  const [loadingTribes, setLoadingTribes] = useState(true);
   const [scoring, setScoring] = useState({});
   const [editingTeams, setEditingTeams] = useState(false);
   const [configuring, setConfiguring] = useState(false);
@@ -230,6 +262,29 @@ const AdminDashboard = () => {
   ]);
 
   const teamColors = ['bg-red-500', 'bg-blue-500', 'bg-green-500', 'bg-purple-500', 'bg-yellow-500', 'bg-pink-500'];
+
+  // Fetch tribes data on component mount
+  useEffect(() => {
+    const fetchTribes = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('tribes')
+          .select('*')
+          .eq('season_id', 1)
+          .eq('is_active', true)
+          .order('name');
+        
+        if (error) throw error;
+        setTribes(data || []);
+      } catch (error) {
+        console.error('Error fetching tribes:', error);
+      } finally {
+        setLoadingTribes(false);
+      }
+    };
+
+    fetchTribes();
+  }, []);
 
   const individualScoring = [
     { key: 'immunityIndividual', label: 'Individual Immunity', points: 3, icon: Shield },
@@ -314,49 +369,90 @@ const AdminDashboard = () => {
     return individualTotal + teamTotal;
   };
 
-  const updateTeam = async (contestantId, newTeam) => {
-    await updateContestant(contestantId, { tribe: newTeam });
+  const updateTeam = async (contestantId, newTribeId) => {
+    await updateContestant(contestantId, { current_tribe_id: newTribeId });
   };
 
-  const assignTeamScore = (team, scoreType) => {
+  const assignTeamScore = (tribeName, scoreType) => {
     contestantsData
-      .filter(c => c.tribe === team)
+      .filter(c => c.tribes?.name === tribeName)
       .forEach(c => {
         const key = `${c.id}-${scoreType}`;
         setScoring(prev => ({ ...prev, [key]: true }));
       });
   };
 
-  const addTeam = () => {
-    setTeams(prev => [...prev, `Team ${prev.length + 1}`]);
-  };
-
-  const updateTeamName = async (index, newName) => {
-    const oldName = teams[index];
-    setTeams(prev => prev.map((team, i) => i === index ? newName : team));
-    
-    // Update all contestants with the old tribe name
-    const contestantsToUpdate = contestantsData.filter(c => c.tribe === oldName);
-    for (const contestant of contestantsToUpdate) {
-      await updateContestant(contestant.id, { tribe: newName });
+  const addTeam = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('tribes')
+        .insert({
+          season_id: 1,
+          name: `Team ${tribes.length + 1}`,
+          color: teamColors[tribes.length % teamColors.length].replace('bg-', '').replace('-500', ''),
+          is_active: true
+        })
+        .select()
+        .single();
+      
+      if (error) throw error;
+      setTribes(prev => [...prev, data]);
+    } catch (error) {
+      console.error('Error adding team:', error);
     }
   };
 
-  const removeTeam = async (index) => {
-    const teamToRemove = teams[index];
-    setTeams(prev => prev.filter((_, i) => i !== index));
-    
-    // Move contestants from removed team to first remaining team
-    const contestantsToUpdate = contestantsData.filter(c => c.tribe === teamToRemove);
-    const newTeam = teams.filter((_, i) => i !== index)[0] || 'Individual';
-    for (const contestant of contestantsToUpdate) {
-      await updateContestant(contestant.id, { tribe: newTeam });
+  const updateTeamName = async (tribeId, newName) => {
+    try {
+      const { error } = await supabase
+        .from('tribes')
+        .update({ name: newName })
+        .eq('id', tribeId);
+      
+      if (error) throw error;
+      
+      setTribes(prev => prev.map(tribe => 
+        tribe.id === tribeId ? { ...tribe, name: newName } : tribe
+      ));
+    } catch (error) {
+      console.error('Error updating team name:', error);
     }
   };
 
-  const getTeamColor = (teamName) => {
-    const index = teams.indexOf(teamName);
-    return teamColors[index % teamColors.length] || 'bg-gray-400';
+  const removeTeam = async (tribeId) => {
+    try {
+      // First, move contestants from this tribe to the first remaining tribe
+      const remainingTribes = tribes.filter(t => t.id !== tribeId);
+      
+      if (remainingTribes.length > 0) {
+        const contestantsToUpdate = contestantsData.filter(c => c.current_tribe_id === tribeId);
+        const newTribeId = remainingTribes[0].id;
+        
+        for (const contestant of contestantsToUpdate) {
+          await updateContestant(contestant.id, { current_tribe_id: newTribeId });
+        }
+      }
+      
+      // Then deactivate the tribe instead of deleting it
+      const { error } = await supabase
+        .from('tribes')
+        .update({ is_active: false })
+        .eq('id', tribeId);
+      
+      if (error) throw error;
+      
+      setTribes(prev => prev.filter(tribe => tribe.id !== tribeId));
+    } catch (error) {
+      console.error('Error removing team:', error);
+    }
+  };
+
+  const getTeamColor = (tribeName) => {
+    const tribe = tribes.find(t => t.name === tribeName);
+    if (tribe && tribe.color) {
+      return `bg-${tribe.color}-500`;
+    }
+    return 'bg-gray-400';
   };
 
   const saveScoring = () => {
@@ -448,7 +544,7 @@ const AdminDashboard = () => {
                     className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 flex items-center gap-2"
                   >
                     <Settings size={16} />
-                    Teams
+                    Tribes
                   </button>
                   <button 
                     onClick={() => setEditingTeams(!editingTeams)}
@@ -467,51 +563,57 @@ const AdminDashboard = () => {
                 </div>
               </div>
 
-              {/* Team Configuration */}
+              {/* Tribe Configuration */}
               {configuring && (
                 <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-                  <h3 className="font-medium mb-3">Team Configuration</h3>
-                  <div className="space-y-3">
-                    {teams.map((team, index) => (
-                      <div key={index} className="flex items-center gap-2">
-                        <div className={`w-4 h-4 rounded-full ${getTeamColor(team)}`}></div>
-                        <input 
-                          value={team}
-                          onChange={(e) => updateTeamName(index, e.target.value)}
-                          className="border rounded px-2 py-1 flex-1"
-                        />
-                        {teams.length > 1 && (
-                          <button 
-                            onClick={() => removeTeam(index)}
-                            className="text-red-500 hover:bg-red-50 p-1 rounded"
-                          >
-                            ×
-                          </button>
-                        )}
-                      </div>
-                    ))}
-                    <button 
-                      onClick={addTeam}
-                      className="bg-blue-500 text-white px-3 py-1 rounded text-sm"
-                    >
-                      + Add Team
-                    </button>
-                  </div>
+                  <h3 className="font-medium mb-3">Tribe Configuration</h3>
+                  {loadingTribes ? (
+                    <div className="flex items-center justify-center py-4">
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-survivor-orange"></div>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {tribes.map((tribe) => (
+                        <div key={tribe.id} className="flex items-center gap-2">
+                          <div className={`w-4 h-4 rounded-full ${getTeamColor(tribe.name)}`}></div>
+                          <input 
+                            value={tribe.name}
+                            onChange={(e) => updateTeamName(tribe.id, e.target.value)}
+                            className="border rounded px-2 py-1 flex-1"
+                          />
+                          {tribes.length > 1 && (
+                            <button 
+                              onClick={() => removeTeam(tribe.id)}
+                              className="text-red-500 hover:bg-red-50 p-1 rounded"
+                            >
+                              ×
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                      <button 
+                        onClick={addTeam}
+                        className="bg-blue-500 text-white px-3 py-1 rounded text-sm"
+                      >
+                        + Add Tribe
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
 
-              {/* Team Assignment */}
+              {/* Tribe Assignment */}
               {editingTeams && (
                 <div className="mb-6 p-4 bg-gray-50 rounded-lg">
                   <h3 className="font-medium mb-3">Player Assignments</h3>
-                  <div className="grid gap-4" style={{gridTemplateColumns: `repeat(${teams.length}, 1fr)`}}>
-                    {teams.map(team => (
-                      <div key={team}>
+                  <div className="grid gap-4" style={{gridTemplateColumns: `repeat(${tribes.length}, 1fr)`}}>
+                    {tribes.map(tribe => (
+                      <div key={tribe.id}>
                         <h4 className="text-sm font-medium mb-2 flex items-center gap-2">
-                          <div className={`w-3 h-3 rounded-full ${getTeamColor(team)}`}></div>
-                          {team}
+                          <div className={`w-3 h-3 rounded-full ${getTeamColor(tribe.name)}`}></div>
+                          {tribe.name}
                         </h4>
-                        {contestantsData.filter(c => c.tribe === team).map(c => (
+                        {contestantsData.filter(c => c.tribes?.name === tribe.name).map(c => (
                           <div key={c.id} className="text-sm p-2 bg-white rounded mb-1">{c.name}</div>
                         ))}
                       </div>
@@ -523,14 +625,14 @@ const AdminDashboard = () => {
                       <div key={c.id} className="flex items-center gap-2 mb-2">
                         <span className="text-sm w-32">{c.name}</span>
                         <select 
-                          value={c.tribe} 
-                          onChange={(e) => updateTeam(c.id, e.target.value)}
+                          value={c.current_tribe_id || ''} 
+                          onChange={(e) => updateTeam(c.id, e.target.value === '' ? null : parseInt(e.target.value))}
                           className="border rounded px-2 py-1 text-sm"
                         >
-                          {teams.map(team => (
-                            <option key={team} value={team}>{team}</option>
+                          <option value="">No tribe</option>
+                          {tribes.map(tribe => (
+                            <option key={tribe.id} value={tribe.id}>{tribe.name}</option>
                           ))}
-                          <option value="Individual">Individual</option>
                         </select>
                       </div>
                     ))}
@@ -538,23 +640,23 @@ const AdminDashboard = () => {
                 </div>
               )}
 
-              {/* Team Challenge Quick Assign */}
+              {/* Tribe Challenge Quick Assign */}
               <div className="mb-4 p-4 bg-blue-50 rounded-lg">
-                <h3 className="font-medium mb-2">Team Challenge Winners</h3>
-                <div className="grid gap-3" style={{gridTemplateColumns: `repeat(${Math.ceil(teams.length)}, 1fr)`}}>
-                  {teams.map(team => (
-                    <div key={team} className="space-y-2">
+                <h3 className="font-medium mb-2">Tribe Challenge Winners</h3>
+                <div className="grid gap-3" style={{gridTemplateColumns: `repeat(${Math.ceil(tribes.length)}, 1fr)`}}>
+                  {tribes.map(tribe => (
+                    <div key={tribe.id} className="space-y-2">
                       <div className="flex items-center gap-2 p-2 bg-white rounded">
                         <input
                           type="checkbox"
-                          id={`${team}-immunity`}
-                          checked={contestantsData.filter(c => c.tribe === team).every(c => isChecked(c.id, 'immunityTeam'))}
+                          id={`${tribe.name}-immunity`}
+                          checked={contestantsData.filter(c => c.tribes?.name === tribe.name).every(c => isChecked(c.id, 'immunityTeam'))}
                           onChange={(e) => {
                             if (e.target.checked) {
-                              assignTeamScore(team, 'immunityTeam');
+                              assignTeamScore(tribe.name, 'immunityTeam');
                             } else {
                               // Remove immunity from all team members
-                              contestantsData.filter(c => c.tribe === team).forEach(c => {
+                              contestantsData.filter(c => c.tribes?.name === tribe.name).forEach(c => {
                                 const key = `${c.id}-immunityTeam`;
                                 setScoring(prev => ({ ...prev, [key]: false }));
                               });
@@ -563,23 +665,23 @@ const AdminDashboard = () => {
                           className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
                         />
                         <label 
-                          htmlFor={`${team}-immunity`}
-                          className={`flex-1 text-center text-white px-2 py-1 rounded text-sm cursor-pointer ${getTeamColor(team)}`}
+                          htmlFor={`${tribe.name}-immunity`}
+                          className={`flex-1 text-center text-white px-2 py-1 rounded text-sm cursor-pointer ${getTeamColor(tribe.name)}`}
                         >
-                          {team} Immunity (+2 pts)
+                          {tribe.name} Immunity (+2 pts)
                         </label>
                       </div>
                       <div className="flex items-center gap-2 p-2 bg-white rounded">
                         <input
                           type="checkbox"
-                          id={`${team}-reward`}
-                          checked={contestantsData.filter(c => c.tribe === team).every(c => isChecked(c.id, 'rewardTeam'))}
+                          id={`${tribe.name}-reward`}
+                          checked={contestantsData.filter(c => c.tribes?.name === tribe.name).every(c => isChecked(c.id, 'rewardTeam'))}
                           onChange={(e) => {
                             if (e.target.checked) {
-                              assignTeamScore(team, 'rewardTeam');
+                              assignTeamScore(tribe.name, 'rewardTeam');
                             } else {
                               // Remove reward from all team members
-                              contestantsData.filter(c => c.tribe === team).forEach(c => {
+                              contestantsData.filter(c => c.tribes?.name === tribe.name).forEach(c => {
                                 const key = `${c.id}-rewardTeam`;
                                 setScoring(prev => ({ ...prev, [key]: false }));
                               });
@@ -588,16 +690,16 @@ const AdminDashboard = () => {
                           className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
                         />
                         <label 
-                          htmlFor={`${team}-reward`}
-                          className={`flex-1 text-center text-white px-2 py-1 rounded text-sm cursor-pointer ${getTeamColor(team)} opacity-75`}
+                          htmlFor={`${tribe.name}-reward`}
+                          className={`flex-1 text-center text-white px-2 py-1 rounded text-sm cursor-pointer ${getTeamColor(tribe.name)} opacity-75`}
                         >
-                          {team} Reward (+1 pt)
+                          {tribe.name} Reward (+1 pt)
                         </label>
                       </div>
                     </div>
                   ))}
                 </div>
-                <p className="text-xs text-blue-600 mt-2">Check boxes to award points to all team members. Uncheck to remove points.</p>
+                <p className="text-xs text-blue-600 mt-2">Check boxes to award points to all tribe members. Uncheck to remove points.</p>
               </div>
 
               {/* Scoring Table */}
@@ -634,9 +736,9 @@ const AdminDashboard = () => {
                         <tr key={contestant.id} className="border-b hover:bg-gray-50">
                           <td className="py-2 px-2">
                             <div className="flex items-center gap-2">
-                              <div className={`w-3 h-3 rounded-full ${getTeamColor(contestant.tribe)}`}></div>
+                              <div className={`w-3 h-3 rounded-full ${getTeamColor(contestant.tribes?.name)}`}></div>
                               <span className="font-medium text-sm">{contestant.name}</span>
-                              {contestant.eliminated && (
+                              {contestant.is_eliminated && (
                                 <span className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded">Eliminated</span>
                               )}
                             </div>
@@ -849,12 +951,13 @@ const AdminDashboard = () => {
                     <div key={contestant.id} className="border rounded-lg p-4">
                       <div className="flex items-start justify-between mb-3">
                         <img
-                          src={contestant.image_url || `https://via.placeholder.com/64x64/cccccc/666666?text=${(contestant.name || 'Unknown').split(' ').map(n => n[0]).join('')}`}
+                          src={contestant.image_url || generatePlaceholderImage(getInitials(contestant.name || 'Unknown'), 64)}
                           alt={contestant.name}
                           className="w-16 h-16 object-cover object-top rounded-full"
                           onError={(e) => {
                             const name = contestant.name || 'Unknown';
-                            e.target.src = `https://via.placeholder.com/64x64/cccccc/666666?text=${name.split(' ').map(n => n[0]).join('')}`;
+                            const initials = getInitials(name);
+                            e.target.src = generatePlaceholderImage(initials, 64);
                           }}
                         />
                         <div className="flex flex-col gap-2">

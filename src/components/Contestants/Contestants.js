@@ -4,6 +4,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useContestants } from '../../contexts/ContestantsContext';
 import { useSoleSurvivor } from '../../contexts/SoleSurvivorContext';
 import ContestantCard from '../shared/ContestantCard';
+import { generatePlaceholderImage, getInitials } from '../../utils/imageUtils';
 
 const Contestants = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -255,8 +256,8 @@ const Contestants = () => {
                       alt={selectedContestant.name}
                       className="w-12 h-12 object-cover object-top rounded-full"
                       onError={(e) => {
-                        const initials = selectedContestant.name.split(' ').map(n => n[0]).join('');
-                        e.target.src = `https://via.placeholder.com/48x48/cccccc/666666?text=${initials}`;
+                        const initials = getInitials(selectedContestant.name);
+                        e.target.src = generatePlaceholderImage(initials, 48);
                       }}
                     />
                     <div>

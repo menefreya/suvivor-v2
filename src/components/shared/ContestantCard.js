@@ -1,5 +1,6 @@
 import React from 'react';
 import { Calendar, MapPin, Briefcase, Crown } from 'lucide-react';
+import { generatePlaceholderImage, getInitials } from '../../utils/imageUtils';
 
 const ContestantCard = ({ 
   contestant, 
@@ -88,7 +89,8 @@ const ContestantCard = ({
           style={{ objectPosition: 'center top' }}
           onError={(e) => {
             const name = contestant.name || 'Unknown';
-            e.target.src = `https://via.placeholder.com/300x300/cccccc/666666?text=${name.split(' ').map(n => n[0]).join('')}`;
+            const initials = getInitials(name);
+            e.target.src = generatePlaceholderImage(initials, 300);
           }}
         />
         
