@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from './AuthContext';
+import { useContestants } from './ContestantsContext';
 
 const DraftContext = createContext();
 
@@ -14,6 +15,7 @@ export const useDraft = () => {
 
 export const DraftProvider = ({ children }) => {
   const { user } = useAuth();
+  const { contestants, fetchContestants } = useContestants();
   const [draftRankings, setDraftRankings] = useState([]);
   const [draftPicks, setDraftPicks] = useState([]);
   const [isDraftSubmitted, setIsDraftSubmitted] = useState(false);
@@ -77,19 +79,20 @@ export const DraftProvider = ({ children }) => {
     }
   }, [user, draftDeadline]);
 
+  // Recalculate draft picks when contestants change (e.g., eliminations)
+  useEffect(() => {
+    if (draftRankings.length > 0 && contestants.length > 0) {
+      calculateDraftPicks(draftRankings);
+    }
+  }, [contestants]);
+
   const loadDraftData = async () => {
     if (!user) return;
     
     setLoading(true);
     try {
-      // First, get all contestants from the contestants table
-      const { data: contestants, error: contestantsError } = await supabase
-        .from('contestants')
-        .select('*')
-        .eq('season_id', 1)
-        .order('name');
-
-      if (contestantsError) throw contestantsError;
+      // Ensure we have fresh contestant data
+      await fetchContestants(true);
 
       // Load existing draft rankings for this user
       const { data: rankings, error: rankingsError } = await supabase
@@ -136,15 +139,16 @@ export const DraftProvider = ({ children }) => {
     }
   };
 
-  const initializeDefaultRankings = async (contestants) => {
+  const initializeDefaultRankings = async (contestantData = null) => {
     try {
-      if (!contestants || contestants.length === 0) {
+      const contestantsToUse = contestantData || contestants;
+      if (!contestantsToUse || contestantsToUse.length === 0) {
         console.error('No contestants available to create rankings');
         return;
       }
 
       // Create shuffled rankings
-      const shuffled = [...contestants].sort(() => Math.random() - 0.5);
+      const shuffled = [...contestantsToUse].sort(() => Math.random() - 0.5);
       const rankings = shuffled.map((contestant, index) => ({
         user_id: user.id,
         season_id: 1,
@@ -333,13 +337,8 @@ export const DraftProvider = ({ children }) => {
       setDraftPicks([]);
       setIsDraftSubmitted(false);
 
-      // Get contestants and reinitialize
-      const { data: contestants, error } = await supabase
-        .from('contestants')
-        .select('*')
-        .eq('season_id', 1);
-
-      if (error) throw error;
+      // Ensure we have fresh contestant data and reinitialize
+      await fetchContestants(true);
       
       if (contestants && contestants.length > 0) {
         await initializeDefaultRankings(contestants);

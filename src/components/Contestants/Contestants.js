@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Filter, Users, Trophy, Crown } from 'lucide-react';
+import { Search, Filter, Users, Trophy, Crown, AlertCircle } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useContestants } from '../../contexts/ContestantsContext';
 import { useSoleSurvivor } from '../../contexts/SoleSurvivorContext';
@@ -9,6 +9,8 @@ const Contestants = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTribe, setSelectedTribe] = useState('All');
   const [showEliminated, setShowEliminated] = useState(false);
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [selectedContestant, setSelectedContestant] = useState(null);
   
   const location = useLocation();
   const navigate = useNavigate();
@@ -24,9 +26,28 @@ const Contestants = () => {
   const handleSoleSurvivorSelect = (contestant) => {
     if (!isSoleSurvivorOpen || contestant.is_eliminated) return;
     
-    changeSoleSurvivor(contestant.id);
-    // Navigate back to dashboard after selection
-    navigate('/dashboard');
+    // Show confirmation dialog
+    setSelectedContestant(contestant);
+    setShowConfirmation(true);
+  };
+
+  // Confirm sole survivor selection
+  const confirmSoleSurvivorSelection = async () => {
+    if (!selectedContestant) return;
+    
+    const result = await changeSoleSurvivor(selectedContestant.id);
+    if (result) {
+      setShowConfirmation(false);
+      setSelectedContestant(null);
+      // Navigate back to dashboard after selection
+      navigate('/dashboard');
+    }
+  };
+
+  // Cancel sole survivor selection
+  const cancelSoleSurvivorSelection = () => {
+    setShowConfirmation(false);
+    setSelectedContestant(null);
   };
 
   const tribes = ['All', 'Ratu', 'Tika', 'Soka'];
@@ -85,9 +106,14 @@ const Contestants = () => {
                   : 'Meet the castaways competing for the title of Sole Survivor'
                 }
               </p>
-              {isSoleSurvivorMode && soleSurvivorPick && (
+              {isSoleSurvivorMode && (
                 <p className="text-sm text-survivor-orange mt-2">
-                  Current pick: <span className="font-medium">{soleSurvivorPick.name}</span>
+                  Current pick: <span className="font-medium">
+                    {soleSurvivorPick 
+                      ? (soleSurvivorPick.name || soleSurvivorPick.contestants?.name)
+                      : 'None'
+                    }
+                  </span>
                 </p>
               )}
             </div>
@@ -159,7 +185,18 @@ const Contestants = () => {
         {/* Contestants Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {filteredContestants.map(contestant => {
-            const isCurrentPick = isSoleSurvivorMode && soleSurvivorPick?.id === contestant.id;
+            const isCurrentPick = isSoleSurvivorMode && soleSurvivorPick?.contestant_id === contestant.id;
+            
+            // Debug logging for sole survivor matching
+            if (isSoleSurvivorMode && contestant.name === 'Jake Latimer') {
+              console.log('Jake Latimer debug:', {
+                contestantId: contestant.id,
+                contestantName: contestant.name,
+                soleSurvivorPickId: soleSurvivorPick?.contestant_id,
+                soleSurvivorPickName: soleSurvivorPick?.contestants?.name,
+                isCurrentPick
+              });
+            }
             const isSelectable = isSoleSurvivorMode && !contestant.is_eliminated && isSoleSurvivorOpen;
             const isDisabled = isSoleSurvivorMode && (contestant.is_eliminated || !isSoleSurvivorOpen);
             
@@ -195,6 +232,70 @@ const Contestants = () => {
           </div>
         )}
       </div>
+
+      {/* Confirmation Modal */}
+      {showConfirmation && selectedContestant && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+            <div className="p-6">
+              <div className="flex items-center space-x-3 mb-4">
+                <AlertCircle className="h-6 w-6 text-survivor-orange" />
+                <h3 className="text-lg font-medium text-gray-900">Confirm Sole Survivor Pick</h3>
+              </div>
+              
+              <div className="mb-6">
+                <p className="text-gray-600 mb-4">
+                  Are you sure you want to select <strong>{selectedContestant.name}</strong> as your Sole Survivor pick?
+                </p>
+                
+                <div className="bg-orange-50 rounded-lg p-4 border border-orange-200">
+                  <div className="flex items-center space-x-3">
+                    <img
+                      src={selectedContestant.image_url || `/contestant-images/${selectedContestant.image}`}
+                      alt={selectedContestant.name}
+                      className="w-12 h-12 object-cover object-top rounded-full"
+                      onError={(e) => {
+                        const initials = selectedContestant.name.split(' ').map(n => n[0]).join('');
+                        e.target.src = `https://via.placeholder.com/48x48/cccccc/666666?text=${initials}`;
+                      }}
+                    />
+                    <div>
+                      <p className="font-medium text-gray-900">{selectedContestant.name}</p>
+                      <p className="text-sm text-gray-600">{selectedContestant.occupation}</p>
+                      <div className="flex items-center space-x-2 mt-1">
+                        <div className="px-2 py-1 bg-survivor-orange text-white text-xs font-medium rounded">
+                          {selectedContestant.tribe}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                {soleSurvivorPick && (
+                  <p className="text-sm text-orange-600 mt-3">
+                    This will replace your current pick: <strong>{soleSurvivorPick.name || soleSurvivorPick.contestants?.name}</strong>
+                  </p>
+                )}
+              </div>
+              
+              <div className="flex space-x-3">
+                <button
+                  onClick={cancelSoleSurvivorSelection}
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmSoleSurvivorSelection}
+                  className="flex-1 bg-survivor-orange text-white py-2 px-4 rounded-md hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-survivor-orange focus:ring-offset-2"
+                >
+                  Confirm Pick
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

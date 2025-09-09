@@ -122,7 +122,7 @@ const MyTeam = () => {
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-500">Sole Survivor Pick</p>
                 <p className="text-xl font-semibold text-gray-900">
-                  {soleSurvivorPick ? (soleSurvivorPick.name || soleSurvivorPick.contestants?.name) : 'Not Selected'}
+                  {soleSurvivorPick ? (soleSurvivorPick.name || soleSurvivorPick.contestants?.name) : 'None'}
                 </p>
                 <p className="text-sm text-gray-600">
                   {soleSurvivorPick ? 'Selected' : 'No pick yet'}

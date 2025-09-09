@@ -71,12 +71,17 @@ export const ContestantsProvider = ({ children }) => {
   // Update contestant locally and in database
   const updateContestant = async (contestantId, updates) => {
     try {
-      const { error } = await supabase
+      console.log('Updating contestant:', contestantId, 'with data:', updates);
+      
+      const { data, error } = await supabase
         .from('contestants')
         .update(updates)
-        .eq('id', contestantId);
+        .eq('id', contestantId)
+        .select();
 
       if (error) throw error;
+
+      console.log('Update successful:', data);
 
       // Update local state
       setContestants(prev => prev.map(contestant => 

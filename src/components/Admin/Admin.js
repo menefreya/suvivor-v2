@@ -70,10 +70,25 @@ const EditContestantForm = ({ contestant, onSave, onCancel }) => {
     hometown: contestant.hometown || '',
     image_url: contestant.image_url || ''
   });
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    await onSave(contestant.id, formData);
+    setSaving(true);
+    setError('');
+    
+    try {
+      const success = await onSave(contestant.id, formData);
+      if (!success) {
+        setError('Failed to update contestant. Please try again.');
+      }
+      // Note: The parent component handles closing the form and showing success message
+    } catch (err) {
+      setError('An error occurred while updating the contestant.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleChange = (field, value) => {
@@ -163,12 +178,19 @@ const EditContestantForm = ({ contestant, onSave, onCancel }) => {
         )}
       </div>
       
+      {error && (
+        <div className="text-red-600 text-sm bg-red-50 border border-red-200 rounded p-2">
+          {error}
+        </div>
+      )}
+      
       <div className="flex gap-2">
         <button
           type="submit"
-          className="flex-1 bg-green-600 text-white text-sm py-1 px-2 rounded hover:bg-green-700"
+          disabled={saving}
+          className="flex-1 bg-green-600 text-white text-sm py-1 px-2 rounded hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Save
+          {saving ? 'Saving...' : 'Save'}
         </button>
         <button
           type="button"
@@ -186,6 +208,7 @@ const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('scoring');
   const [episode, setEpisode] = useState(1);
   const [editingContestant, setEditingContestant] = useState(null);
+  const [successMessage, setSuccessMessage] = useState('');
   const { contestants: contestantsData, loading, error, updateContestant, fetchContestants } = useContestants();
   const [teams, setTeams] = useState(['Ratu', 'Tika', 'Soka']);
   const [scoring, setScoring] = useState({});
@@ -234,10 +257,26 @@ const AdminDashboard = () => {
     const contestant = contestantsData.find(c => c.id === contestantId);
     if (!contestant) return;
 
-    await updateContestant(contestantId, { 
+    const success = await updateContestant(contestantId, { 
       is_eliminated: !contestant.is_eliminated 
     });
+    
+    if (success) {
+      setSuccessMessage(`${contestant.name} has been ${contestant.is_eliminated ? 'reinstated' : 'eliminated'}.`);
+      setTimeout(() => setSuccessMessage(''), 3000);
+    }
     setEditingContestant(null);
+  };
+
+  const handleContestantSave = async (contestantId, formData) => {
+    const success = await updateContestant(contestantId, formData);
+    if (success) {
+      const contestant = contestantsData.find(c => c.id === contestantId);
+      setSuccessMessage(`${contestant?.name || 'Contestant'} has been updated successfully.`);
+      setEditingContestant(null); // Close the form
+      setTimeout(() => setSuccessMessage(''), 3000); // Auto-dismiss after 3 seconds
+    }
+    return success;
   };
 
   // Helper functions
@@ -793,6 +832,13 @@ const AdminDashboard = () => {
                 </div>
               )}
 
+              {successMessage && (
+                <div className="mb-4 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-md flex items-center gap-2">
+                  <CheckCircle size={16} />
+                  {successMessage}
+                </div>
+              )}
+
               {loading ? (
                 <div className="flex items-center justify-center py-12">
                   <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-survivor-orange"></div>
@@ -834,7 +880,7 @@ const AdminDashboard = () => {
                       {editingContestant === contestant.id ? (
                         <EditContestantForm 
                           contestant={contestant} 
-                          onSave={updateContestant}
+                          onSave={handleContestantSave}
                           onCancel={() => setEditingContestant(null)}
                         />
                       ) : (
