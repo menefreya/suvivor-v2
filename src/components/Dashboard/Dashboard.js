@@ -22,7 +22,7 @@ const Dashboard = () => {
     rank: 1, // This would be calculated from all users
     previousRank: 1,
     draftPicks: isDraftSubmitted ? draftPicks.map(p => p.name || p.contestants?.name) : ['Not Set'],
-    soleSurvivor: isSoleSurvivorSubmitted ? soleSurvivorPick?.name : 'Not Set',
+    soleSurvivor: isSoleSurvivorSubmitted ? (soleSurvivorPick?.contestants?.name || soleSurvivorPick?.name) : 'Not Set',
     isCurrentUser: true
   };
 
@@ -41,6 +41,39 @@ const Dashboard = () => {
       default:
         return <Minus className="h-4 w-4 text-gray-500" />;
     }
+  };
+
+  const getTribeColor = (tribe) => {
+    // If tribe is an object with color property (from database)
+    if (tribe && typeof tribe === 'object' && tribe.color) {
+      const colorMap = {
+        'red': 'bg-red-500',
+        'blue': 'bg-blue-500',
+        'green': 'bg-green-500',
+        'yellow': 'bg-yellow-500',
+        'purple': 'bg-purple-500',
+        'orange': 'bg-orange-500',
+        'pink': 'bg-pink-500',
+        'indigo': 'bg-indigo-500',
+        'gray': 'bg-gray-500'
+      };
+      return colorMap[tribe.color.toLowerCase()] || `bg-${tribe.color}-500`;
+    }
+    
+    // If tribe is a string (legacy support)
+    if (typeof tribe === 'string') {
+      const colors = {
+        'Ratu': 'bg-red-500',
+        'Tika': 'bg-blue-500',
+        'Soka': 'bg-green-500',
+        'Hina': 'bg-blue-500',
+        'Kele': 'bg-red-500',
+        'Uli': 'bg-green-500'
+      };
+      return colors[tribe] || 'bg-gray-500';
+    }
+    
+    return 'bg-gray-500';
   };
 
   return (
@@ -106,7 +139,7 @@ const Dashboard = () => {
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-500">Sole Survivor</p>
                 <p className="text-lg font-semibold text-gray-900">
-                  {isSoleSurvivorSubmitted ? soleSurvivorPick?.name : 'Not Set'}
+                  {isSoleSurvivorSubmitted ? (soleSurvivorPick?.contestants?.name || soleSurvivorPick?.name) : 'Not Set'}
                 </p>
               </div>
             </div>
@@ -200,23 +233,30 @@ const Dashboard = () => {
                     <div className="flex items-center justify-between p-4 bg-gradient-to-r from-yellow-50 to-orange-50 rounded-lg border border-yellow-200">
                       <div className="flex items-center space-x-3">
                         <img
-                          src={soleSurvivorPick.image_url || `/contestant-images/${soleSurvivorPick.image}`}
-                          alt={soleSurvivorPick.name || soleSurvivorPick.contestants?.name}
+                          src={soleSurvivorPick.contestants?.image_url || soleSurvivorPick.image_url || `/contestant-images/${soleSurvivorPick.image}`}
+                          alt={soleSurvivorPick.contestants?.name || soleSurvivorPick.name}
                           className="w-12 h-12 object-cover object-top rounded-full"
                           onError={(e) => {
-                            const name = soleSurvivorPick.name || soleSurvivorPick.contestants?.name || 'Unknown';
+                            const name = soleSurvivorPick.contestants?.name || soleSurvivorPick.name || 'Unknown';
                             const initials = getInitials(name);
                             e.target.src = generatePlaceholderImage(initials, 48);
                           }}
                         />
                         <div>
-                          <p className="font-medium text-gray-900">{soleSurvivorPick.name || soleSurvivorPick.contestants?.name}</p>
-                          <p className="text-sm text-gray-600">{soleSurvivorPick.occupation || soleSurvivorPick.contestants?.occupation}</p>
+                          <p className="font-medium text-gray-900">{soleSurvivorPick.contestants?.name || soleSurvivorPick.name}</p>
+                          <div className="flex items-center space-x-2">
+                            <p className="text-sm text-gray-600">{soleSurvivorPick.contestants?.occupation || soleSurvivorPick.occupation}</p>
+                            {soleSurvivorPick.contestants?.tribes?.name && (
+                              <div className={`px-2 py-1 rounded-full text-white text-xs font-medium ${getTribeColor(soleSurvivorPick.contestants.tribes)}`}>
+                                {soleSurvivorPick.contestants.tribes.name}
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="text-lg font-semibold text-survivor-orange">{soleSurvivorPick.points || 0} pts</p>
-                        <p className="text-xs text-gray-500">Episodes: {soleSurvivorPick.episodes || 0}</p>
+                        <p className="text-lg font-semibold text-survivor-orange">{soleSurvivorPick.contestants?.points || soleSurvivorPick.points || 0} pts</p>
+                        <p className="text-xs text-gray-500">Episodes: {soleSurvivorPick.contestants?.episodes || soleSurvivorPick.episodes || 0}</p>
                         <p className="text-xs text-survivor-orange font-medium mt-1">Click to change →</p>
                       </div>
                     </div>
@@ -263,7 +303,14 @@ const Dashboard = () => {
                           />
                           <div>
                             <p className="font-medium text-gray-900">{pick.name || pick.contestants?.name}</p>
-                            <p className="text-sm text-gray-600">{pick.occupation || pick.contestants?.occupation}</p>
+                            <div className="flex items-center space-x-2">
+                              <p className="text-sm text-gray-600">{pick.occupation || pick.contestants?.occupation}</p>
+                              {(pick.tribes?.name || pick.contestants?.tribes?.name) && (
+                                <div className={`px-2 py-1 rounded-full text-white text-xs font-medium ${getTribeColor(pick.tribes || pick.contestants?.tribes)}`}>
+                                  {pick.tribes?.name || pick.contestants?.tribes?.name}
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </div>
                         <div className="text-right">

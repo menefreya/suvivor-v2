@@ -41,7 +41,14 @@ export const SoleSurvivorProvider = ({ children }) => {
         .from('sole_survivor_picks')
         .select(`
           *,
-          contestants (*)
+          contestants (
+            *,
+            tribes (
+              id,
+              name,
+              color
+            )
+          )
         `)
         .eq('user_id', user.id)
         .eq('season_id', 1)
@@ -89,7 +96,14 @@ export const SoleSurvivorProvider = ({ children }) => {
         }])
         .select(`
           *,
-          contestants (*)
+          contestants (
+            *,
+            tribes (
+              id,
+              name,
+              color
+            )
+          )
         `)
         .single();
 
@@ -123,7 +137,14 @@ export const SoleSurvivorProvider = ({ children }) => {
         .eq('is_active', true)
         .select(`
           *,
-          contestants (*)
+          contestants (
+            *,
+            tribes (
+              id,
+              name,
+              color
+            )
+          )
         `)
         .single();
 

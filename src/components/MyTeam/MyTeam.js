@@ -42,10 +42,9 @@ const MyTeam = () => {
     soleSurvivorPick
   });
 
-  const getTribeColor = (tribeName) => {
-    const tribe = tribes.find(t => t.name === tribeName);
-    if (tribe && tribe.color) {
-      // Map common color names to Tailwind classes
+  const getTribeColor = (tribe) => {
+    // If tribe is an object with color property (from database)
+    if (tribe && typeof tribe === 'object' && tribe.color) {
       const colorMap = {
         'red': 'bg-red-500',
         'blue': 'bg-blue-500',
@@ -60,13 +59,20 @@ const MyTeam = () => {
       return colorMap[tribe.color.toLowerCase()] || `bg-${tribe.color}-500`;
     }
     
-    // Fallback to hardcoded colors if tribes not loaded yet
-    const fallbackColors = {
-      'Ratu': 'bg-red-500',
-      'Tika': 'bg-blue-500',
-      'Soka': 'bg-green-500'
-    };
-    return fallbackColors[tribeName] || 'bg-gray-500';
+    // If tribe is a string (legacy support)
+    if (typeof tribe === 'string') {
+      const fallbackColors = {
+        'Ratu': 'bg-red-500',
+        'Tika': 'bg-blue-500',
+        'Soka': 'bg-green-500',
+        'Hina': 'bg-blue-500',
+        'Kele': 'bg-red-500',
+        'Uli': 'bg-green-500'
+      };
+      return fallbackColors[tribe] || 'bg-gray-500';
+    }
+    
+    return 'bg-gray-500';
   };
 
   const getOriginalRank = (contestantId) => {
@@ -221,8 +227,8 @@ const MyTeam = () => {
                         </div>
                       </div>
                       <div className="flex items-center space-x-2">
-                        <div className={`px-2 py-1 rounded-full text-white text-xs font-medium ${getTribeColor(pick.tribe || pick.contestants?.tribe)}`}>
-                          {pick.tribe || pick.contestants?.tribe}
+                        <div className={`px-2 py-1 rounded-full text-white text-xs font-medium ${getTribeColor(pick.tribes || pick.contestants?.tribes)}`}>
+                          {pick.tribes?.name || pick.contestants?.tribes?.name || 'No Tribe'}
                         </div>
                         <div className="text-right">
                           <p className="text-sm font-medium text-gray-900">{pick.points} pts</p>
@@ -272,8 +278,8 @@ const MyTeam = () => {
                           </div>
                         </div>
                       </div>
-                      <div className={`px-2 py-1 rounded-full text-white text-xs font-medium ${getTribeColor(pick.tribe || pick.contestants?.tribe)}`}>
-                        {pick.tribe || pick.contestants?.tribe}
+                      <div className={`px-2 py-1 rounded-full text-white text-xs font-medium ${getTribeColor(pick.tribes || pick.contestants?.tribes)}`}>
+                        {pick.tribes?.name || pick.contestants?.tribes?.name || 'No Tribe'}
                       </div>
                     </div>
                   ))}

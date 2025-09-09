@@ -107,8 +107,8 @@ const Draft = () => {
                         <p className="text-sm text-gray-500">Rank #{pick.rank} in your rankings</p>
                       </div>
                     </div>
-                    <div className={`px-3 py-1 rounded-full text-white text-sm font-medium ${getTribeColor(pick.tribe || pick.contestants?.tribe)}`}>
-                      {pick.tribe || pick.contestants?.tribe}
+                    <div className={`px-3 py-1 rounded-full text-white text-sm font-medium ${getTribeColor(pick.tribes || pick.contestants?.tribes)}`}>
+                      {pick.tribes?.name || pick.contestants?.tribes?.name || 'No Tribe'}
                     </div>
                   </div>
                 ))}
@@ -158,8 +158,8 @@ const Draft = () => {
                         <div className="flex-1 min-w-0">
                           <p className="font-medium text-gray-900 truncate">{contestant.name || contestant.contestants?.name}</p>
                           <div className="flex items-center space-x-2">
-                            <div className={`px-2 py-1 rounded text-white text-xs font-medium ${getTribeColor(contestant.tribe || contestant.contestants?.tribe)}`}>
-                              {contestant.tribe || contestant.contestants?.tribe}
+                            <div className={`px-2 py-1 rounded text-white text-xs font-medium ${getTribeColor(contestant.tribes || contestant.contestants?.tribes)}`}>
+                              {contestant.tribes?.name || contestant.contestants?.tribes?.name || 'No Tribe'}
                             </div>
                             {isCurrentPick && (
                               <div className="px-2 py-1 bg-green-600 text-white text-xs font-medium rounded">
@@ -248,8 +248,8 @@ const Draft = () => {
                           <p className="text-sm text-gray-500">Rank #{pick.rank} in your rankings</p>
                         </div>
                       </div>
-                      <div className={`px-3 py-1 rounded-full text-white text-sm font-medium ${getTribeColor(pick.tribe || pick.contestants?.tribe)}`}>
-                        {pick.tribe || pick.contestants?.tribe}
+                      <div className={`px-3 py-1 rounded-full text-white text-sm font-medium ${getTribeColor(pick.tribes || pick.contestants?.tribes)}`}>
+                        {pick.tribes?.name || pick.contestants?.tribes?.name || 'No Tribe'}
                       </div>
                     </div>
                   ))}
@@ -301,8 +301,8 @@ const Draft = () => {
                           <div className="flex-1 min-w-0">
                             <p className="font-medium text-gray-900 truncate">{contestant.name || contestant.contestants?.name}</p>
                             <div className="flex items-center space-x-2">
-                              <div className={`px-2 py-1 rounded text-white text-xs font-medium ${getTribeColor(contestant.tribe || contestant.contestants?.tribe)}`}>
-                                {contestant.tribe || contestant.contestants?.tribe}
+                              <div className={`px-2 py-1 rounded text-white text-xs font-medium ${getTribeColor(contestant.tribes || contestant.contestants?.tribes)}`}>
+                                {contestant.tribes?.name || contestant.contestants?.tribes?.name || 'No Tribe'}
                               </div>
                               {isCurrentPick && (
                                 <div className="px-2 py-1 bg-green-600 text-white text-xs font-medium rounded">
@@ -581,8 +581,8 @@ const Draft = () => {
                                         Current Pick
                                       </div>
                                     )}
-                                    <div className={`px-3 py-1 rounded-full text-white text-sm font-medium ${getTribeColor(contestant.tribe || contestant.contestants?.tribe)}`}>
-                                      {contestant.tribe || contestant.contestants?.tribe}
+                                    <div className={`px-3 py-1 rounded-full text-white text-sm font-medium ${getTribeColor(contestant.tribes || contestant.contestants?.tribes)}`}>
+                                      {contestant.tribes?.name || contestant.contestants?.tribes?.name || 'No Tribe'}
                                     </div>
                                     
                                     {(contestant.is_eliminated || contestant.contestants?.is_eliminated) && (

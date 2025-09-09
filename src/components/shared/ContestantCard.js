@@ -17,12 +17,36 @@ const ContestantCard = ({
   showTribe = true
 }) => {
   const getTribeColor = (tribe) => {
-    const colors = {
-      'Ratu': 'bg-red-500',
-      'Tika': 'bg-blue-500',
-      'Soka': 'bg-green-500'
-    };
-    return colors[tribe] || 'bg-gray-500';
+    // If tribe is an object with color property (from database)
+    if (tribe && typeof tribe === 'object' && tribe.color) {
+      const colorMap = {
+        'red': 'bg-red-500',
+        'blue': 'bg-blue-500',
+        'green': 'bg-green-500',
+        'yellow': 'bg-yellow-500',
+        'purple': 'bg-purple-500',
+        'orange': 'bg-orange-500',
+        'pink': 'bg-pink-500',
+        'indigo': 'bg-indigo-500',
+        'gray': 'bg-gray-500'
+      };
+      return colorMap[tribe.color.toLowerCase()] || `bg-${tribe.color}-500`;
+    }
+    
+    // If tribe is a string (legacy support)
+    if (typeof tribe === 'string') {
+      const colors = {
+        'Ratu': 'bg-red-500',
+        'Tika': 'bg-blue-500',
+        'Soka': 'bg-green-500',
+        'Hina': 'bg-blue-500',
+        'Kele': 'bg-red-500',
+        'Uli': 'bg-green-500'
+      };
+      return colors[tribe] || 'bg-gray-500';
+    }
+    
+    return 'bg-gray-500';
   };
 
   const getPointsColor = (points) => {
@@ -95,9 +119,9 @@ const ContestantCard = ({
         />
         
         {/* Tribe Badge */}
-        {showTribe && contestant.tribe && (
-          <div className={`absolute top-3 left-3 px-2 py-1 rounded-full text-white text-xs font-medium ${getTribeColor(contestant.tribe)}`}>
-            {contestant.tribe}
+        {showTribe && contestant.tribes?.name && (
+          <div className={`absolute top-3 left-3 px-2 py-1 rounded-full text-white text-xs font-medium ${getTribeColor(contestant.tribes)}`}>
+            {contestant.tribes.name}
           </div>
         )}
         

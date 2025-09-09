@@ -265,7 +265,7 @@ const Contestants = () => {
                       <p className="text-sm text-gray-600">{selectedContestant.occupation}</p>
                       <div className="flex items-center space-x-2 mt-1">
                         <div className="px-2 py-1 bg-survivor-orange text-white text-xs font-medium rounded">
-                          {selectedContestant.tribe}
+                          {selectedContestant.tribes?.name || 'No Tribe'}
                         </div>
                       </div>
                     </div>

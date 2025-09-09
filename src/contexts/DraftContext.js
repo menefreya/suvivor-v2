@@ -42,20 +42,28 @@ export const DraftProvider = ({ children }) => {
 
     // Save picks to database
     try {
-      // Delete existing picks
+      // First, deactivate existing picks for this user/season
       await supabase
         .from('draft_picks')
-        .delete()
+        .update({ is_active: false })
         .eq('user_id', user.id)
-        .eq('season_id', 1);
+        .eq('season_id', 1)
+        .eq('is_active', true);
 
-      // Insert new picks
+      // Then insert new picks
       const { data, error } = await supabase
         .from('draft_picks')
         .insert(picks)
         .select(`
           *,
-          contestants (*)
+          contestants (
+            *,
+            tribes (
+              id,
+              name,
+              color
+            )
+          )
         `);
 
       if (error) throw error;
@@ -81,10 +89,10 @@ export const DraftProvider = ({ children }) => {
 
   // Recalculate draft picks when contestants change (e.g., eliminations)
   useEffect(() => {
-    if (draftRankings.length > 0 && contestants.length > 0) {
+    if (draftRankings.length > 0 && contestants.length > 0 && isDraftSubmitted && !loading) {
       calculateDraftPicks(draftRankings);
     }
-  }, [contestants]);
+  }, [contestants, isDraftSubmitted, loading]);
 
   const loadDraftData = async () => {
     if (!user) return;
@@ -99,7 +107,14 @@ export const DraftProvider = ({ children }) => {
         .from('draft_rankings')
         .select(`
           *,
-          contestants (*)
+          contestants (
+            *,
+            tribes (
+              id,
+              name,
+              color
+            )
+          )
         `)
         .eq('user_id', user.id)
         .eq('season_id', 1)
@@ -111,7 +126,6 @@ export const DraftProvider = ({ children }) => {
         // User has existing rankings
         setDraftRankings(rankings);
         setIsDraftSubmitted(rankings[0].is_submitted);
-        await calculateDraftPicks(rankings);
       } else {
         // No existing rankings - create default rankings with all contestants in random order
         await initializeDefaultRankings(contestants);
@@ -122,7 +136,14 @@ export const DraftProvider = ({ children }) => {
         .from('draft_picks')
         .select(`
           *,
-          contestants (*)
+          contestants (
+            *,
+            tribes (
+              id,
+              name,
+              color
+            )
+          )
         `)
         .eq('user_id', user.id)
         .eq('season_id', 1)
@@ -297,7 +318,14 @@ export const DraftProvider = ({ children }) => {
         }])
         .select(`
           *,
-          contestants (*)
+          contestants (
+            *,
+            tribes (
+              id,
+              name,
+              color
+            )
+          )
         `)
         .single();
 

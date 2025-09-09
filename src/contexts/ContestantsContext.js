@@ -62,7 +62,7 @@ export const ContestantsProvider = ({ children }) => {
 
   // Get contestants by tribe
   const getContestantsByTribe = (tribeName) => {
-    return contestants.filter(contestant => contestant.tribe === tribeName);
+    return contestants.filter(contestant => contestant.tribes?.name === tribeName);
   };
 
   // Get active contestants (not eliminated)
@@ -123,7 +123,7 @@ export const ContestantsProvider = ({ children }) => {
       // Tribe filter
       let matchesTribe = true;
       if (filters.tribe && filters.tribe !== 'All') {
-        matchesTribe = contestant.tribe === filters.tribe;
+        matchesTribe = contestant.tribes?.name === filters.tribe;
       }
 
       // Elimination status filter
@@ -140,8 +140,9 @@ export const ContestantsProvider = ({ children }) => {
   const getTribeStats = () => {
     const stats = {};
     contestants.forEach(contestant => {
-      if (!stats[contestant.tribe]) {
-        stats[contestant.tribe] = {
+      const tribeName = contestant.tribes?.name || 'No Tribe';
+      if (!stats[tribeName]) {
+        stats[tribeName] = {
           total: 0,
           active: 0,
           eliminated: 0,
@@ -149,13 +150,13 @@ export const ContestantsProvider = ({ children }) => {
         };
       }
       
-      stats[contestant.tribe].total++;
+      stats[tribeName].total++;
       if (contestant.is_eliminated) {
-        stats[contestant.tribe].eliminated++;
+        stats[tribeName].eliminated++;
       } else {
-        stats[contestant.tribe].active++;
+        stats[tribeName].active++;
       }
-      stats[contestant.tribe].totalPoints += (contestant.points || 0);
+      stats[tribeName].totalPoints += (contestant.points || 0);
     });
     
     return stats;

@@ -50,12 +50,36 @@ const Episodes = () => {
   ];
 
   const getTribeColor = (tribe) => {
-    const colors = {
-      'Ratu': 'bg-red-500',
-      'Tika': 'bg-blue-500',
-      'Soka': 'bg-green-500'
-    };
-    return colors[tribe] || 'bg-gray-500';
+    // If tribe is an object with color property (from database)
+    if (tribe && typeof tribe === 'object' && tribe.color) {
+      const colorMap = {
+        'red': 'bg-red-500',
+        'blue': 'bg-blue-500',
+        'green': 'bg-green-500',
+        'yellow': 'bg-yellow-500',
+        'purple': 'bg-purple-500',
+        'orange': 'bg-orange-500',
+        'pink': 'bg-pink-500',
+        'indigo': 'bg-indigo-500',
+        'gray': 'bg-gray-500'
+      };
+      return colorMap[tribe.color.toLowerCase()] || `bg-${tribe.color}-500`;
+    }
+    
+    // If tribe is a string (legacy support)
+    if (typeof tribe === 'string') {
+      const colors = {
+        'Ratu': 'bg-red-500',
+        'Tika': 'bg-blue-500',
+        'Soka': 'bg-green-500',
+        'Hina': 'bg-blue-500',
+        'Kele': 'bg-red-500',
+        'Uli': 'bg-green-500'
+      };
+      return colors[tribe] || 'bg-gray-500';
+    }
+    
+    return 'bg-gray-500';
   };
 
   const isScored = (contestantId, scoreType) => {
@@ -64,8 +88,8 @@ const Episodes = () => {
     // For team scoring, check if the contestant's tribe won
     if (scoreType.includes('Team')) {
       const contestant = contestants.find(c => c.id === contestantId);
-      if (contestant && contestant.tribe) {
-        return episodeScoring[`${contestant.tribe.toLowerCase()}-${scoreType}`] || false;
+      if (contestant && contestant.tribes?.name) {
+        return episodeScoring[`${contestant.tribes.name.toLowerCase()}-${scoreType}`] || false;
       }
       return false;
     }
@@ -329,7 +353,7 @@ const Episodes = () => {
                         <tr key={contestant.id} className="border-b hover:bg-gray-50">
                           <td className="py-3 px-2">
                             <div className="flex items-center gap-3">
-                              <div className={`w-3 h-3 rounded-full ${getTribeColor(contestant.tribe)}`}></div>
+                              <div className={`w-3 h-3 rounded-full ${getTribeColor(contestant.tribes)}`}></div>
                               <img
                                 src={contestant.image_url || `/contestant-images/${contestant.image}`}
                                 alt={contestant.name}
