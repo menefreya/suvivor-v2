@@ -1,37 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Calendar, Play, Clock, Award, Users, Shield, Eye, Plus, Minus, Crown } from 'lucide-react';
-import { supabase } from '../../lib/supabase';
+import { useContestants } from '../../contexts/ContestantsContext';
 
 const Episodes = () => {
   const [selectedEpisode, setSelectedEpisode] = useState(5);
   const [viewMode, setViewMode] = useState('scoring'); // 'overview' or 'scoring'
-  const [contestants, setContestants] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  // Fetch contestants from Supabase
-  useEffect(() => {
-    const fetchContestants = async () => {
-      try {
-        setLoading(true);
-        const { data, error } = await supabase
-          .from('contestants')
-          .select('*')
-          .eq('season_id', 1)
-          .order('name');
-        
-        if (error) throw error;
-        setContestants(data || []);
-      } catch (error) {
-        console.error('Error fetching contestants:', error);
-        setError(error.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchContestants();
-  }, []);
+  const { contestants, loading, error } = useContestants();
 
   // Mock scoring data - in real app this would come from API
   const mockScoring = {
@@ -89,9 +63,10 @@ const Episodes = () => {
     // For team scoring, check if the contestant's tribe won
     if (scoreType.includes('Team')) {
       const contestant = contestants.find(c => c.id === contestantId);
-      if (contestant) {
+      if (contestant && contestant.tribe) {
         return episodeScoring[`${contestant.tribe.toLowerCase()}-${scoreType}`] || false;
       }
+      return false;
     }
     
     // For individual scoring, check contestant-specific scoring

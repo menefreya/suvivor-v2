@@ -5,7 +5,7 @@ import { useSoleSurvivor } from '../../contexts/SoleSurvivorContext';
 import { supabase } from '../../lib/supabase';
 
 const MyTeam = () => {
-  const { draftPicks, draftRankings, isDraftSubmitted, getReplacementPick, getAllReplacementPicks } = useDraft();
+  const { draftPicks, draftRankings, isDraftSubmitted, getAllReplacementPicks } = useDraft();
   const { soleSurvivorPick } = useSoleSurvivor();
   const [tribes, setTribes] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -73,7 +73,6 @@ const MyTeam = () => {
     return ranking ? ranking.rank : null;
   };
 
-  const replacementPick = getReplacementPick();
   const allReplacementPicks = getAllReplacementPicks();
 
   if (draftPicks.length === 0) {

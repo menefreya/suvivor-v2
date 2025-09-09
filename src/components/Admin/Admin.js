@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
   Save, 
   Users, 
@@ -16,13 +16,10 @@ import {
   Unlock,
   Trash2,
   CheckCircle,
-  AlertCircle,
   Clock,
-  Trophy,
-  Crown,
   Target
 } from 'lucide-react';
-import { supabase } from '../../lib/supabase';
+import { useContestants } from '../../contexts/ContestantsContext';
 
 // Contestant Display Component
 const ContestantDisplay = ({ contestant }) => {
@@ -188,10 +185,8 @@ const EditContestantForm = ({ contestant, onSave, onCancel }) => {
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('scoring');
   const [episode, setEpisode] = useState(1);
-  const [contestantsData, setContestantsData] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [editingContestant, setEditingContestant] = useState(null);
+  const { contestants: contestantsData, loading, error, updateContestant, fetchContestants } = useContestants();
   const [teams, setTeams] = useState(['Ratu', 'Tika', 'Soka']);
   const [scoring, setScoring] = useState({});
   const [editingTeams, setEditingTeams] = useState(false);
@@ -234,53 +229,6 @@ const AdminDashboard = () => {
     { key: 'rewardTeam', label: 'Team Reward', points: 1, icon: Award }
   ];
 
-  // Database functions
-  useEffect(() => {
-    fetchContestants();
-  }, []);
-
-  const fetchContestants = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      const { data, error } = await supabase
-        .from('contestants')
-        .select('*')
-        .eq('season_id', 1)
-        .order('name');
-
-      if (error) throw error;
-      
-      setContestantsData(data || []);
-    } catch (error) {
-      console.error('Error fetching contestants:', error);
-      setError('Failed to load contestants');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const updateContestant = async (contestantId, updates) => {
-    try {
-      const { error } = await supabase
-        .from('contestants')
-        .update(updates)
-        .eq('id', contestantId);
-
-      if (error) throw error;
-
-      // Update local state
-      setContestantsData(prev => prev.map(c => 
-        c.id === contestantId ? { ...c, ...updates } : c
-      ));
-
-      setEditingContestant(null);
-    } catch (error) {
-      console.error('Error updating contestant:', error);
-      setError('Failed to update contestant');
-    }
-  };
 
   const toggleEliminated = async (contestantId) => {
     const contestant = contestantsData.find(c => c.id === contestantId);
@@ -289,6 +237,7 @@ const AdminDashboard = () => {
     await updateContestant(contestantId, { 
       is_eliminated: !contestant.is_eliminated 
     });
+    setEditingContestant(null);
   };
 
   // Helper functions
@@ -343,22 +292,27 @@ const AdminDashboard = () => {
     setTeams(prev => [...prev, `Team ${prev.length + 1}`]);
   };
 
-  const updateTeamName = (index, newName) => {
+  const updateTeamName = async (index, newName) => {
     const oldName = teams[index];
     setTeams(prev => prev.map((team, i) => i === index ? newName : team));
     
-    setContestantsData(prev => prev.map(c => 
-      c.tribe === oldName ? { ...c, tribe: newName } : c
-    ));
+    // Update all contestants with the old tribe name
+    const contestantsToUpdate = contestantsData.filter(c => c.tribe === oldName);
+    for (const contestant of contestantsToUpdate) {
+      await updateContestant(contestant.id, { tribe: newName });
+    }
   };
 
-  const removeTeam = (index) => {
+  const removeTeam = async (index) => {
     const teamToRemove = teams[index];
     setTeams(prev => prev.filter((_, i) => i !== index));
     
-    setContestantsData(prev => prev.map(c => 
-      c.tribe === teamToRemove ? { ...c, tribe: teams[0] || 'Individual' } : c
-    ));
+    // Move contestants from removed team to first remaining team
+    const contestantsToUpdate = contestantsData.filter(c => c.tribe === teamToRemove);
+    const newTeam = teams.filter((_, i) => i !== index)[0] || 'Individual';
+    for (const contestant of contestantsToUpdate) {
+      await updateContestant(contestant.id, { tribe: newTeam });
+    }
   };
 
   const getTeamColor = (teamName) => {
