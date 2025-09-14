@@ -13,7 +13,8 @@ export const Navigation: React.FC<NavigationProps> = ({
   user 
 }) => {
   const navItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: '🏠' },
+    { id: 'homepage', label: 'Home', icon: '🏠' },
+    { id: 'dashboard', label: 'Dashboard', icon: '📊' },
     { id: 'drafts', label: 'Draft', icon: '📋' },
     { id: 'team', label: 'My Team', icon: '👥' },
     { id: 'leaderboard', label: 'Leaderboard', icon: '🏆' },

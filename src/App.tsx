@@ -83,7 +83,7 @@ const App: React.FC = () => {
                   error={error}
                 />
               ) : (
-                <Navigate to="/dashboard" replace />
+                <Navigate to="/homepage" replace />
               )
             } 
           />
@@ -98,12 +98,29 @@ const App: React.FC = () => {
                   error={error}
                 />
               ) : (
-                <Navigate to="/dashboard" replace />
+                <Navigate to="/homepage" replace />
               )
             } 
           />
           
           {/* Protected routes */}
+          <Route 
+            path="/homepage" 
+            element={
+              user ? (
+                <MainApp 
+                  user={user}
+                  onSignOut={handleSignOut}
+                  onUpdateProfile={updateProfile}
+                  onUpdatePassword={updatePassword}
+                  loading={loading}
+                  error={error}
+                />
+              ) : (
+                <Navigate to="/login" replace />
+              )
+            } 
+          />
           <Route 
             path="/dashboard" 
             element={
@@ -194,13 +211,13 @@ const App: React.FC = () => {
           <Route 
             path="/" 
             element={
-              <Navigate to={user ? "/dashboard" : "/login"} replace />
+              <Navigate to={user ? "/homepage" : "/login"} replace />
             } 
           />
           <Route 
             path="*" 
             element={
-              <Navigate to={user ? "/dashboard" : "/login"} replace />
+              <Navigate to={user ? "/homepage" : "/login"} replace />
             } 
           />
         </Routes>

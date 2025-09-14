@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { User } from '@supabase/supabase-js'
 import { Navigation } from './Navigation'
+import { Homepage } from './Homepage/Homepage'
 import { Draft } from './Draft'
 import { Welcome } from '../Welcome'
 import { ProfileManager } from '../ProfileManager'
@@ -28,10 +29,12 @@ export const MainApp: React.FC<MainAppProps> = ({
   const [showProfile, setShowProfile] = useState(false)
   
   // Get current page from URL path
-  const currentPage = location.pathname.substring(1) || 'dashboard'
+  const currentPage = location.pathname.substring(1) || 'homepage'
 
   const renderCurrentPage = () => {
     switch (currentPage) {
+      case 'homepage':
+        return <Homepage />
       case 'dashboard':
         return (
           <Welcome
@@ -67,16 +70,7 @@ export const MainApp: React.FC<MainAppProps> = ({
           </div>
         )
       default:
-        return (
-          <Welcome
-            user={user}
-            onSignOut={onSignOut}
-            onUpdateProfile={onUpdateProfile}
-            onUpdatePassword={onUpdatePassword}
-            loading={loading}
-            error={error}
-          />
-        )
+        return <Homepage />
     }
   }
 
