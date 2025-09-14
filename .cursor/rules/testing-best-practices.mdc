@@ -1,0 +1,106 @@
+---
+globs: *.test.ts,*.test.tsx,*.spec.ts,*.spec.tsx
+description: Testing standards and patterns for React and TypeScript
+---
+
+# Testing Best Practices
+
+## Testing Strategy
+- Write unit tests for all business logic and utility functions
+- Implement integration tests for API endpoints
+- Use React Testing Library for component testing
+- Test error scenarios and edge cases
+- Maintain high test coverage (aim for 80%+)
+
+## React Component Testing
+- Test component behavior, not implementation details
+- Use `screen` queries from React Testing Library
+- Test user interactions and accessibility
+- Mock external dependencies appropriately
+- Test loading and error states
+
+## API Testing
+- Test all HTTP methods and status codes
+- Test request/response validation
+- Test authentication and authorization
+- Test error handling scenarios
+- Use proper test data setup and teardown
+
+## Test Organization
+- Use descriptive test names that explain the scenario
+- Group related tests with `describe` blocks
+- Use proper setup and teardown methods
+- Keep tests independent and isolated
+- Use meaningful assertions with proper error messages
+
+## Mocking Strategies
+- Mock external API calls and services
+- Use Jest mocks for functions and modules
+- Mock database operations in integration tests
+- Use MSW (Mock Service Worker) for API mocking
+- Avoid mocking implementation details
+
+## Example Patterns
+```typescript
+// Good: Component test with proper queries
+import { render, screen, fireEvent } from '@testing-library/react';
+import { Button } from './Button';
+
+describe('Button Component', () => {
+  it('should render button with correct text', () => {
+    render(<Button onClick={jest.fn()}>Click me</Button>);
+    expect(screen.getByRole('button', { name: 'Click me' })).toBeInTheDocument();
+  });
+
+  it('should call onClick when clicked', () => {
+    const handleClick = jest.fn();
+    render(<Button onClick={handleClick}>Click me</Button>);
+    
+    fireEvent.click(screen.getByRole('button'));
+    expect(handleClick).toHaveBeenCalledTimes(1);
+  });
+
+  it('should be disabled when disabled prop is true', () => {
+    render(<Button onClick={jest.fn()} disabled>Click me</Button>);
+    expect(screen.getByRole('button')).toBeDisabled();
+  });
+});
+
+// Good: API test with proper mocking
+import { UserService } from './UserService';
+import { UserRepository } from './UserRepository';
+
+describe('UserService', () => {
+  let userService: UserService;
+  let mockUserRepository: jest.Mocked<UserRepository>;
+
+  beforeEach(() => {
+    mockUserRepository = {
+      findByEmail: jest.fn(),
+      create: jest.fn(),
+    } as jest.Mocked<UserRepository>;
+    
+    userService = new UserService(mockUserRepository);
+  });
+
+  it('should create user successfully', async () => {
+    const userData = { email: 'test@example.com', password: 'password123' };
+    mockUserRepository.findByEmail.mockResolvedValue(null);
+    mockUserRepository.create.mockResolvedValue({ id: '1', ...userData });
+
+    const result = await userService.createUser(userData);
+    
+    expect(result).toEqual({ id: '1', ...userData });
+    expect(mockUserRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({ email: userData.email })
+    );
+  });
+
+  it('should throw error if user already exists', async () => {
+    const userData = { email: 'test@example.com', password: 'password123' };
+    mockUserRepository.findByEmail.mockResolvedValue({ id: '1', ...userData });
+
+    await expect(userService.createUser(userData)).rejects.toThrow('User already exists');
+  });
+});
+```

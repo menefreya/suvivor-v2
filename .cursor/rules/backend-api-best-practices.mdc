@@ -1,0 +1,101 @@
+---
+globs: *.ts,*.js
+description: API design and backend architecture patterns
+---
+
+# Backend API Best Practices
+
+## Architecture Patterns
+- Use layered architecture: routes → controllers → services → repositories
+- Implement proper separation of concerns
+- Use dependency injection for better testability
+- Follow SOLID principles
+- Implement proper error handling and logging
+
+## API Design Standards
+- Follow RESTful API design principles
+- Use consistent response formats across all endpoints
+- Implement proper HTTP status codes
+- Use meaningful endpoint names and resource paths
+- Version your APIs appropriately
+
+## Security Implementation
+- Validate and sanitize all incoming data
+- Implement proper authentication and authorization
+- Use JWT tokens or session-based authentication
+- Implement rate limiting on API endpoints
+- Use HTTPS in production environments
+- Hash passwords using bcrypt or similar secure methods
+
+## Error Handling
+- Implement comprehensive error handling for all operations
+- Use typed error objects with meaningful messages
+- Log errors appropriately for debugging
+- Return user-friendly error messages
+- Implement proper error boundaries
+
+## Performance Optimization
+- Implement caching strategies where appropriate
+- Use database connection pooling
+- Optimize database queries and use proper indexing
+- Implement request/response compression
+- Use CDN for static assets
+
+## Testing Standards
+- Write unit tests for all business logic
+- Implement integration tests for API endpoints
+- Use proper mocking for external dependencies
+- Test error scenarios and edge cases
+- Maintain high test coverage
+
+## Example Patterns
+```typescript
+// Good: Controller with proper error handling
+export class UserController {
+  constructor(private userService: UserService) {}
+
+  async createUser(req: Request, res: Response): Promise<void> {
+    try {
+      const { email, password } = req.body;
+      
+      // Input validation
+      if (!email || !password) {
+        res.status(400).json({ 
+          error: 'Email and password are required' 
+        });
+        return;
+      }
+
+      const user = await this.userService.createUser({ email, password });
+      res.status(201).json({ 
+        success: true, 
+        data: user 
+      });
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        res.status(400).json({ error: error.message });
+      } else {
+        res.status(500).json({ error: 'Internal server error' });
+      }
+    }
+  }
+}
+
+// Good: Service layer with proper typing
+export class UserService {
+  constructor(private userRepository: UserRepository) {}
+
+  async createUser(userData: CreateUserRequest): Promise<User> {
+    // Business logic validation
+    if (await this.userRepository.findByEmail(userData.email)) {
+      throw new ValidationError('User already exists');
+    }
+
+    const hashedPassword = await bcrypt.hash(userData.password, 10);
+    return this.userRepository.create({
+      ...userData,
+      password: hashedPassword
+    });
+  }
+}
+```

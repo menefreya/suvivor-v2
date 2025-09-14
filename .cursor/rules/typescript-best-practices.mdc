@@ -1,0 +1,60 @@
+---
+globs: *.ts,*.tsx
+description: TypeScript best practices and coding standards
+---
+
+# TypeScript Best Practices
+
+## Type Safety Standards
+- Always use strict mode and proper type definitions
+- Avoid `any` type unless absolutely necessary - prefer `unknown` or specific types
+- Implement proper error handling with typed exceptions
+- Use generic types for reusable components and functions
+- Define interfaces for all data structures and API responses
+
+## Code Quality
+- Use consistent naming conventions:
+  - camelCase for variables, functions, and properties
+  - PascalCase for components, classes, and types
+  - SCREAMING_SNAKE_CASE for constants
+- Add comprehensive JSDoc comments for complex functions
+- Use type guards for runtime type checking
+- Prefer type assertions over type casting
+
+## Error Handling
+- Implement proper error boundaries in React components
+- Use typed error objects instead of generic Error
+- Always handle async operations with try-catch blocks
+- Provide meaningful error messages for debugging
+
+## Import/Export Standards
+- Use named exports over default exports when possible
+- Group imports: external libraries first, then internal modules
+- Use absolute imports with path mapping when configured
+- Avoid circular dependencies
+
+## Example Patterns
+```typescript
+// Good: Proper interface definition
+interface User {
+  id: string;
+  email: string;
+  createdAt: Date;
+}
+
+// Good: Generic function with proper typing
+function createApiResponse<T>(data: T, message: string): ApiResponse<T> {
+  return { data, message, success: true };
+}
+
+// Good: Error handling with typed errors
+try {
+  const result = await apiCall();
+  return result;
+} catch (error) {
+  if (error instanceof ValidationError) {
+    // Handle validation error
+  }
+  throw new ApiError('Failed to process request', error);
+}
+```

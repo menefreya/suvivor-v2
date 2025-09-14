@@ -1,0 +1,103 @@
+---
+globs: *.css,*.scss,*.tsx,*.jsx
+description: CSS and styling best practices for modern web applications
+---
+
+# CSS and Styling Best Practices
+
+## CSS Architecture
+- Use CSS Modules, Styled Components, or Tailwind CSS for component styling
+- Follow BEM methodology for CSS class naming
+- Use CSS custom properties (variables) for consistent theming
+- Implement responsive design with mobile-first approach
+- Use semantic class names that describe purpose, not appearance
+
+## Component Styling Patterns
+- Keep styles close to components (co-location)
+- Use CSS-in-JS for dynamic styling when needed
+- Implement proper CSS reset/normalize
+- Use consistent spacing and typography scales
+- Follow accessibility guidelines for color contrast and focus states
+
+## Performance Considerations
+- Minimize CSS bundle size
+- Use CSS containment for better performance
+- Implement critical CSS for above-the-fold content
+- Use CSS transforms and opacity for animations
+- Avoid expensive CSS properties in animations
+
+## Responsive Design
+- Use mobile-first responsive design
+- Implement proper breakpoints for different screen sizes
+- Use flexible layouts with CSS Grid and Flexbox
+- Test on multiple devices and screen sizes
+- Use relative units (rem, em, %) instead of fixed units when appropriate
+
+## Accessibility and UX
+- Ensure sufficient color contrast ratios (WCAG AA minimum)
+- Implement proper focus states for keyboard navigation
+- Use semantic HTML elements
+- Provide alternative text for images
+- Test with screen readers and keyboard-only navigation
+
+## Example Patterns
+```css
+/* Good: BEM methodology with semantic naming */
+.user-profile {
+  padding: 1rem;
+  border-radius: 0.5rem;
+  background-color: var(--color-background);
+}
+
+.user-profile__avatar {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+}
+
+.user-profile__name {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.user-profile--featured {
+  border: 2px solid var(--color-primary);
+}
+
+/* Good: Responsive design with CSS Grid */
+.grid-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1rem;
+  padding: 1rem;
+}
+
+@media (max-width: 768px) {
+  .grid-container {
+    grid-template-columns: 1fr;
+    padding: 0.5rem;
+  }
+}
+```
+
+```tsx
+// Good: CSS Modules usage
+import styles from './Button.module.css';
+
+interface ButtonProps {
+  variant?: 'primary' | 'secondary';
+  children: React.ReactNode;
+}
+
+const Button: React.FC<ButtonProps> = ({ variant = 'primary', children }) => {
+  return (
+    <button 
+      className={`${styles.button} ${styles[`button--${variant}`]}`}
+      aria-label="Click button"
+    >
+      {children}
+    </button>
+  );
+};
+```

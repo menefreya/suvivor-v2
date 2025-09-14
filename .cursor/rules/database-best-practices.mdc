@@ -1,0 +1,87 @@
+---
+globs: *.sql,*.prisma,*.ts
+description: Database design and query optimization patterns
+---
+
+# Database Best Practices
+
+## Schema Design
+- Use normalized schema design with proper relationships
+- Implement proper foreign key relationships
+- Add indexes for frequently queried fields
+- Use appropriate data types and constraints
+- Design for scalability and performance
+
+## Query Optimization
+- Use prepared statements to prevent SQL injection
+- Optimize queries with proper indexing
+- Use database transactions for data consistency
+- Implement connection pooling for better performance
+- Use EXPLAIN ANALYZE to optimize slow queries
+
+## Security Considerations
+- Always validate and sanitize input data
+- Use parameterized queries to prevent SQL injection
+- Implement proper access controls and permissions
+- Use environment variables for database credentials
+- Enable SSL connections in production
+
+## Data Integrity
+- Use database constraints (NOT NULL, UNIQUE, CHECK)
+- Implement proper foreign key constraints
+- Use transactions for multi-step operations
+- Implement soft deletes when appropriate
+- Use database-level validation alongside application validation
+
+## ORM Best Practices (Prisma/TypeORM)
+- Define clear data models with proper relationships
+- Use migrations for schema changes
+- Implement proper error handling for database operations
+- Use connection pooling and query optimization
+- Generate TypeScript types from database schema
+
+## Example Patterns
+```sql
+-- Good: Proper table design with constraints
+CREATE TABLE users (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  email VARCHAR(255) UNIQUE NOT NULL,
+  password_hash VARCHAR(255) NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Good: Proper indexing
+CREATE INDEX idx_users_email ON users(email);
+CREATE INDEX idx_users_created_at ON users(created_at);
+
+-- Good: Foreign key relationship
+CREATE TABLE posts (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  title VARCHAR(255) NOT NULL,
+  content TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+```
+
+```typescript
+// Good: Prisma model with proper relationships
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  posts     Post[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Post {
+  id        String   @id @default(cuid())
+  title     String
+  content   String?
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+```

@@ -1,0 +1,111 @@
+---
+globs: *.ts,*.tsx,*.js,*.jsx
+description: Security best practices for web application development
+---
+
+# Security Best Practices
+
+## Input Validation and Sanitization
+- Validate all user inputs on both client and server side
+- Sanitize data before storing in database
+- Use proper type checking and validation libraries
+- Implement CSRF protection for state-changing operations
+- Validate file uploads and limit file types/sizes
+
+## Authentication and Authorization
+- Implement proper authentication mechanisms (JWT, OAuth, session-based)
+- Use secure password hashing (bcrypt, Argon2)
+- Implement proper session management
+- Use HTTPS in production environments
+- Implement proper logout functionality
+
+## Data Protection
+- Use environment variables for sensitive configuration
+- Never commit secrets or API keys to version control
+- Implement proper data encryption for sensitive data
+- Use secure headers (CSP, HSTS, X-Frame-Options)
+- Implement proper CORS policies
+
+## API Security
+- Implement rate limiting on API endpoints
+- Use proper HTTP status codes
+- Implement request validation and sanitization
+- Use API keys or tokens for external API access
+- Implement proper error handling without exposing sensitive information
+
+## Frontend Security
+- Implement Content Security Policy (CSP)
+- Use HTTPS for all external resources
+- Implement proper XSS protection
+- Validate and sanitize user-generated content
+- Use secure cookie settings
+
+## Example Patterns
+```typescript
+// Good: Input validation with proper error handling
+import { z } from 'zod';
+
+const userSchema = z.object({
+  email: z.string().email('Invalid email format'),
+  password: z.string().min(8, 'Password must be at least 8 characters'),
+  age: z.number().min(18, 'Must be at least 18 years old')
+});
+
+export const validateUserInput = (data: unknown) => {
+  try {
+    return userSchema.parse(data);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      throw new ValidationError('Invalid input data', error.errors);
+    }
+    throw error;
+  }
+};
+
+// Good: Secure password hashing
+import bcrypt from 'bcrypt';
+
+export const hashPassword = async (password: string): Promise<string> => {
+  const saltRounds = 12;
+  return bcrypt.hash(password, saltRounds);
+};
+
+export const verifyPassword = async (
+  password: string, 
+  hashedPassword: string
+): Promise<boolean> => {
+  return bcrypt.compare(password, hashedPassword);
+};
+
+// Good: Secure API endpoint with rate limiting
+import rateLimit from 'express-rate-limit';
+
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // limit each IP to 5 requests per windowMs
+  message: 'Too many login attempts, please try again later',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+app.post('/api/auth/login', loginLimiter, async (req, res) => {
+  try {
+    const { email, password } = validateUserInput(req.body);
+    // ... authentication logic
+  } catch (error) {
+    res.status(400).json({ error: 'Invalid credentials' });
+  }
+});
+```
+
+## Security Checklist
+- [ ] All inputs validated and sanitized
+- [ ] Passwords properly hashed
+- [ ] HTTPS enabled in production
+- [ ] Environment variables used for secrets
+- [ ] Rate limiting implemented
+- [ ] CORS properly configured
+- [ ] Security headers implemented
+- [ ] Error messages don't expose sensitive information
+- [ ] Authentication tokens properly managed
+- [ ] Database queries use parameterized statements

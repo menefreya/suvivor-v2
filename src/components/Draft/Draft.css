@@ -1,0 +1,667 @@
+/* Draft Submitted Page Design - Based on Image Reference */
+
+/* Container */
+.draft-container {
+  width: 100%;
+  min-height: 100vh;
+  background: #F8F9FA;
+  padding: 40px 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Success Header */
+.draft-success-header {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.draft-success-header h1 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #1a365d;
+  margin: 0 0 12px 0;
+  letter-spacing: -0.02em;
+}
+
+.success-subtitle {
+  font-size: 1.125rem;
+  color: #6c757d;
+  margin: 0;
+  font-weight: 400;
+}
+
+/* Section Cards */
+.section-card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  padding: 32px;
+  margin-bottom: 24px;
+}
+
+.section-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #2c3e50;
+  margin: 0 0 8px 0;
+  text-align: center;
+}
+
+.section-subtitle {
+  font-size: 0.875rem;
+  color: #6c757d;
+  margin: 0 0 24px 0;
+  text-align: center;
+  font-weight: 400;
+}
+
+/* Draft Picks Section */
+.draft-picks-section {
+  margin-bottom: 32px;
+}
+
+.picks-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.pick-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 0;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.pick-item:last-child {
+  border-bottom: none;
+}
+
+.pick-number {
+  width: 48px;
+  height: 48px;
+  background: #F57C00;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+.pick-content {
+  flex: 1;
+}
+
+.pick-name {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #2c3e50;
+  margin-bottom: 4px;
+}
+
+.pick-rank {
+  font-size: 0.875rem;
+  color: #6c757d;
+  font-weight: 400;
+}
+
+/* Complete Rankings Section */
+.complete-rankings-section {
+  margin-bottom: 32px;
+}
+
+.rankings-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.ranking-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 0;
+  border-bottom: 1px solid #e9ecef;
+  transition: background-color 0.2s ease;
+}
+
+.ranking-item:last-child {
+  border-bottom: none;
+}
+
+.ranking-item.current-pick {
+  background: #E8F5E9;
+  margin: 0 -32px;
+  padding: 16px 32px;
+  border-radius: 8px;
+}
+
+.ranking-number {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.ranking-number.current {
+  background: #4CAF50;
+  color: white;
+}
+
+.ranking-number.other {
+  background: #F57C00;
+  color: white;
+}
+
+.contestant-image {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.contestant-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.placeholder-image {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 700;
+  font-size: 0.875rem;
+}
+
+.contestant-name {
+  flex: 1;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #2c3e50;
+}
+
+/* Tribe Tags */
+.tribe-tag {
+  padding: 6px 12px;
+  border-radius: 16px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: white;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  flex-shrink: 0;
+}
+
+/* Edit Controls */
+.edit-controls {
+  margin-top: 20px;
+  text-align: center;
+}
+
+.edit-button {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.edit-button.edit {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.edit-button.edit:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.edit-button.cancel {
+  background: #6c757d;
+  color: white;
+  box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3);
+}
+
+.edit-button.cancel:hover {
+  background: #5a6268;
+  transform: translateY(-2px);
+}
+
+/* Edit Action Bar */
+.edit-action-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  padding: 20px;
+  background: #f8f9fa;
+  border-radius: 12px;
+  margin-bottom: 24px;
+  border: 1px solid #dee2e6;
+}
+
+.action-status {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.saving-indicator,
+.unsaved-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  padding: 8px 16px;
+  border-radius: 20px;
+}
+
+.saving-indicator {
+  background: #e3f2fd;
+  color: #1976d2;
+}
+
+.unsaved-indicator {
+  background: #fff3e0;
+  color: #f57c00;
+}
+
+.submit-button {
+  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+  color: white;
+  border: none;
+  padding: 16px 32px;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+}
+
+.submit-button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
+}
+
+.submit-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.button-icon {
+  font-size: 1.125rem;
+}
+
+/* Edit Rankings List */
+.edit-rankings-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.edit-ranking-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: white;
+  border: 2px solid #e9ecef;
+  border-radius: 12px;
+  padding: 16px;
+  transition: all 0.3s ease;
+}
+
+.edit-ranking-item:hover {
+  border-color: #667eea;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+}
+
+.edit-rank-number {
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1rem;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+.edit-ranking-item .contestant-card {
+  flex: 1;
+  margin: 0;
+  box-shadow: none;
+  border-radius: 0;
+  background: transparent;
+  border: none;
+  padding: 0;
+}
+
+.edit-ranking-item .contestant-card:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+/* ContestantCard Styles for Drag and Drop */
+.contestant-card {
+  background: white;
+  border: 2px solid #e9ecef;
+  border-radius: 12px;
+  padding: 16px;
+  margin: 8px 0;
+  transition: all 0.3s ease;
+  cursor: grab;
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-height: 80px;
+}
+
+.contestant-card:hover {
+  border-color: #667eea;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+}
+
+.contestant-card.dragging {
+  opacity: 0.5;
+  transform: rotate(5deg);
+  cursor: grabbing;
+}
+
+.contestant-card.drop-target {
+  border-color: #28a745;
+  background-color: #f8fff8;
+}
+
+.contestant-card.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background-color: #f8f9fa;
+}
+
+.rank-position {
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1rem;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+.contestant-image {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.contestant-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.placeholder-image {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 700;
+  font-size: 1.25rem;
+}
+
+.contestant-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.contestant-name {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #333;
+  margin: 0;
+}
+
+.contestant-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.detail-item {
+  font-size: 0.875rem;
+  color: #666;
+  background: #f8f9fa;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.tribe-indicator {
+  padding: 4px 12px;
+  border-radius: 16px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: white;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  align-self: flex-start;
+}
+
+.status-indicators {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.status-badge {
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.status-badge.eliminated {
+  background: #dc3545;
+  color: white;
+}
+
+.status-badge.points {
+  background: #28a745;
+  color: white;
+}
+
+.drag-handle {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  color: #999;
+  font-size: 1.25rem;
+  cursor: grab;
+  user-select: none;
+}
+
+.drag-handle:hover {
+  color: #667eea;
+}
+
+/* Current Pick Tag */
+.current-pick-tag {
+  padding: 6px 12px;
+  border-radius: 16px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: white;
+  background: #4CAF50;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  flex-shrink: 0;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .draft-container {
+    padding: 20px 16px;
+  }
+  
+  .draft-success-header h1 {
+    font-size: 2rem;
+  }
+  
+  .success-subtitle {
+    font-size: 1rem;
+  }
+  
+  .section-card {
+    padding: 24px 20px;
+  }
+  
+  .section-title {
+    font-size: 1.25rem;
+  }
+  
+  .pick-item,
+  .ranking-item {
+    gap: 12px;
+    padding: 12px 0;
+  }
+  
+  .pick-number,
+  .ranking-number {
+    width: 40px;
+    height: 40px;
+    font-size: 1rem;
+  }
+  
+  .contestant-image {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .pick-name,
+  .contestant-name {
+    font-size: 1rem;
+  }
+  
+  .ranking-item.current-pick {
+    margin: 0 -20px;
+    padding: 12px 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .draft-container {
+    padding: 16px 12px;
+  }
+  
+  .draft-success-header h1 {
+    font-size: 1.75rem;
+  }
+  
+  .section-card {
+    padding: 20px 16px;
+  }
+  
+  .pick-item,
+  .ranking-item {
+    gap: 8px;
+    padding: 8px 0;
+  }
+  
+  .pick-number,
+  .ranking-number {
+    width: 36px;
+    height: 36px;
+    font-size: 0.875rem;
+  }
+  
+  .contestant-image {
+    width: 36px;
+    height: 36px;
+  }
+  
+  .pick-name,
+  .contestant-name {
+    font-size: 0.875rem;
+  }
+  
+  .tribe-tag,
+  .current-pick-tag {
+    padding: 4px 8px;
+    font-size: 0.625rem;
+  }
+  
+  .ranking-item.current-pick {
+    margin: 0 -16px;
+    padding: 8px 16px;
+  }
+  
+  .edit-action-bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+  }
+  
+  .submit-button {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .edit-rankings-list {
+    gap: 8px;
+  }
+  
+  .edit-ranking-item {
+    padding: 12px;
+    gap: 12px;
+  }
+  
+  .edit-rank-number {
+    width: 36px;
+    height: 36px;
+    font-size: 0.875rem;
+  }
+}

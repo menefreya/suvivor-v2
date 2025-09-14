@@ -1,0 +1,97 @@
+---
+globs: *.tsx,*.jsx
+description: React component architecture and best practices
+---
+
+# React Component Best Practices
+
+## Component Architecture
+- Use functional components with hooks (React 18+)
+- Implement proper component architecture with separation of concerns
+- Keep components small and focused on a single responsibility
+- Use composition over inheritance
+- Extract reusable logic into custom hooks
+
+## State Management
+- Use appropriate hooks for different state types:
+  - `useState` for local component state
+  - `useReducer` for complex state logic
+  - `useContext` for shared state across components
+  - Custom hooks for reusable stateful logic
+- Implement proper memoization with `React.memo`, `useMemo`, and `useCallback`
+- Avoid unnecessary re-renders by optimizing dependencies
+
+## Performance Optimization
+- Use `React.memo` for components that receive stable props
+- Implement `useMemo` for expensive calculations
+- Use `useCallback` for functions passed as props
+- Implement lazy loading with `React.lazy` and `Suspense`
+- Use proper key props for list items
+
+## Side Effects and Lifecycle
+- Handle side effects properly with `useEffect`
+- Clean up subscriptions and timers in useEffect cleanup
+- Use proper dependency arrays to avoid infinite loops
+- Separate concerns: one useEffect per side effect
+
+## Accessibility and UX
+- Include accessibility considerations for all components
+- Implement proper ARIA attributes
+- Provide loading and error states for UI components
+- Use semantic HTML elements
+- Ensure keyboard navigation support
+
+## Component Patterns
+```tsx
+// Good: Functional component with proper typing
+interface ButtonProps {
+  children: React.ReactNode;
+  onClick: () => void;
+  variant?: 'primary' | 'secondary';
+  disabled?: boolean;
+}
+
+const Button: React.FC<ButtonProps> = ({ 
+  children, 
+  onClick, 
+  variant = 'primary', 
+  disabled = false 
+}) => {
+  return (
+    <button 
+      className={`btn btn-${variant}`}
+      onClick={onClick}
+      disabled={disabled}
+      aria-disabled={disabled}
+    >
+      {children}
+    </button>
+  );
+};
+
+// Good: Custom hook for reusable logic
+const useApi = <T>(url: string) => {
+  const [data, setData] = useState<T | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch(url);
+        const result = await response.json();
+        setData(result);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Unknown error');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [url]);
+
+  return { data, loading, error };
+};
+```
